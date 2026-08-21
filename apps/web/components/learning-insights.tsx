@@ -2,12 +2,354 @@
 import { useState } from "react";
 import type { LearningProfile } from "@/lib/global-learning";
 
-export function LearningInsights({ profile, locale }: { profile: LearningProfile; locale: "en" | "zh" }) {
+export function LearningInsights({
+  profile,
+  locale,
+}: {
+  profile: LearningProfile;
+  locale: "en" | "zh";
+}) {
   const zh = locale === "zh";
-  const [message, setMessage] = useState(""); const [importText, setImportText] = useState(""); const [showImport, setShowImport] = useState(false); const [busy, setBusy] = useState(false);
-  async function exportBatch() { setBusy(true); setMessage(zh ? "正在准备所有尚未分析场次的批量提示词…" : "Preparing a batch prompt for every unanalysed session…"); try { const response = await fetch(`/api/analysis/batch-export?locale=${locale}&limit=all`); const body = await response.json() as { prompt?: string; sessionIds?: string[]; error?: string }; if (!response.ok || !body.prompt) { setMessage(body.error || "Export failed"); return; } const file = new Blob([body.prompt], { type: "text/plain;charset=utf-8" }); const url = URL.createObjectURL(file); const link = document.createElement("a"); link.href = url; link.download = `leetcode-trace-batch-analysis-${new Date().toISOString().slice(0, 10)}.txt`; link.click(); URL.revokeObjectURL(url); setMessage(zh ? `已下载全部 ${body.sessionIds?.length ?? 0} 个待分析场次的批量提示词。` : `Downloaded every unanalysed session (${body.sessionIds?.length ?? 0}).`); } catch { setMessage(zh ? "无法连接本地批量导出服务。刷新页面后重试。" : "Could not reach the local batch export service. Refresh and try again."); } finally { setBusy(false); } }
-  async function importBatch() { setBusy(true); try { const response = await fetch("/api/analysis/batch-import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ response: importText }) }); const body = await response.json() as { imported?: number; errors?: Array<unknown>; error?: string }; if (!response.ok) { setMessage(body.error || "Import failed"); return; } setMessage(zh ? `已导入 ${body.imported ?? 0} 个分析${body.errors?.length ? `；${body.errors.length} 行需要修正` : ""}。` : `Imported ${body.imported ?? 0} analyses${body.errors?.length ? `; ${body.errors.length} rows need attention` : ""}.`); setShowImport(false); setImportText(""); } catch { setMessage(zh ? "导入请求失败，请刷新后重试。" : "Import request failed; refresh and retry."); } finally { setBusy(false); } }
-  async function analyzeApi() { setBusy(true); try { const response = await fetch("/api/analysis/batch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ locale, limit: 10 }) }); const body = await response.json() as { analyzed?: number; requested?: number; error?: string }; setMessage(response.ok ? (zh ? `已通过 API 分析 ${body.analyzed}/${body.requested} 个场次。刷新页面查看画像。` : `API analyzed ${body.analyzed}/${body.requested} sessions. Refresh to see the profile.`) : (body.error || "Analysis failed")); } catch { setMessage(zh ? "无法连接本地 API 分析服务。" : "Could not reach the local API analysis service."); } finally { setBusy(false); } }
-  const cards = [[zh ? "总场次" : "Sessions", profile.totals.sessions], [zh ? "首次提交 AC" : "First-submit AC", profile.totals.firstSubmitAccepted], [zh ? "多次提交才 AC" : "Multiple submits", profile.totals.neededMultipleSubmissions], [zh ? "看题解完成" : "Used solution", profile.totals.consultedSolution]];
-  return <main className="shell insights-page"><header className="history-hero"><div><p className="eyebrow">{zh ? "全局学习计划" : "GLOBAL LEARNING PLAN"}</p><h1>{zh ? "知道弱在哪里，接下来练什么" : "Know what is weak and what to practice next"}</h1><p className="lede">{zh ? "本地规则计算掌握度、遗忘风险和优先级；AI 用于批量归因与补充建议。" : "Local rules compute mastery, forgetting risk, and priority; AI handles batch attribution and recommendations."}</p></div></header><section className="insight-stats">{cards.map(([label, value]) => <div key={String(label)}><b>{value}</b><span>{label}</span></div>)}</section><section className="batch-card"><div><p className="eyebrow">{zh ? "批量 AI 分析" : "BATCH AI ANALYSIS"}</p><h2>{zh ? `${profile.totals.sessions - profile.totals.analyzed} 个场次尚未分析` : `${profile.totals.sessions - profile.totals.analyzed} sessions have not been analyzed`}</h2><p>{zh ? "手动模式可用于任意 AI；API 模式仅在已配置密钥时可用。" : "Manual mode works with any AI; API mode is available when a key is configured."}</p></div><div className="batch-actions"><button className="manual-primary" disabled={busy} onClick={exportBatch}>{zh ? "导出批量提示词" : "Export batch prompt"}</button><button className="ghost-button" disabled={busy} onClick={() => { setShowImport(true); setMessage(""); }}>{zh ? "导入批量结果" : "Import batch result"}</button><button className="ghost-button" disabled={busy} onClick={analyzeApi}>{zh ? "API 批量分析 10 个" : "Analyze 10 via API"}</button></div></section>{message && <p className="success-banner">{message}</p>}<div className="insights-grid"><section><div className="section-heading"><div><p className="eyebrow">{zh ? "优先复习" : "PRIORITY REVIEWS"}</p><h2>{zh ? "最需要巩固的具体能力" : "Skills to reinforce first"}</h2></div></div><div className="insight-list">{profile.weaknesses.length ? profile.weaknesses.slice(0, 8).map((item) => <div key={item.id}><div><b>{item.label}</b><small>{item.category} · {item.observations} {zh ? "次证据" : "signals"}</small></div><strong>{Math.round(item.mastery * 100)}%</strong></div>) : <p>{zh ? "先批量分析场次，系统会生成具体薄弱点。" : "Batch-analyze sessions to build specific weakness signals."}</p>}</div></section><section><div className="section-heading"><div><p className="eyebrow">{zh ? "下一批题" : "NEXT PRACTICE"}</p><h2>{zh ? "建议先重做这些题" : "Re-solve these first"}</h2></div></div><div className="insight-list">{profile.nextQueue.length ? profile.nextQueue.map((item) => <div key={item.sessionId}><div><b>{item.title}</b><small>{zh ? ({ "No accepted submission in this session": "本次没有 AC", "Completed after consulting a solution": "参考题解后完成", "Started with no initial idea": "开始时没有思路" }[item.reason] ?? item.reason) : item.reason}</small></div><strong>{item.priority}</strong></div>) : <p>{zh ? "还没有足够的风险信号。" : "No high-risk sessions yet."}</p>}</div></section></div><section className="topic-section"><p className="eyebrow">{zh ? "题型信号" : "TOPIC SIGNALS"}</p><div>{profile.topicSignals.map((item) => <article key={item.label}><b>{item.label}</b><span>{item.sessions} {zh ? "场次" : "sessions"}</span><small>{zh ? `${item.noAc} 未 AC · ${item.consultedSolution} 看题解` : `${item.noAc} no AC · ${item.consultedSolution} used solution`}</small></article>)}</div></section>{showImport && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowImport(false); }}><section className="import-modal"><div className="modal-heading"><h2>{zh ? "导入批量 AI 结果" : "Import batch AI results"}</h2><button onClick={() => setShowImport(false)}>×</button></div><p>{zh ? "粘贴 AI 返回的 JSONL：每行必须有 sessionId 与 analysis。" : "Paste AI JSONL: every row needs sessionId and analysis."}</p><textarea autoFocus value={importText} onChange={(event) => setImportText(event.target.value)} /><div className="modal-actions"><button className="ghost-button" onClick={() => setShowImport(false)}>{zh ? "取消" : "Cancel"}</button><button className="manual-primary" disabled={busy || !importText.trim()} onClick={importBatch}>{zh ? "校验并导入" : "Validate and import"}</button></div></section></div>}</main>;
+  const [message, setMessage] = useState("");
+  const [importText, setImportText] = useState("");
+  const [showImport, setShowImport] = useState(false);
+  const [busy, setBusy] = useState(false);
+  async function exportBatch() {
+    setBusy(true);
+    setMessage(
+      zh
+        ? "正在准备所有尚未分析场次的批量提示词…"
+        : "Preparing a batch prompt for every unanalysed session…",
+    );
+    try {
+      const response = await fetch(
+        `/api/analysis/batch-export?locale=${locale}&limit=all`,
+      );
+      const body = (await response.json()) as {
+        prompt?: string;
+        sessionIds?: string[];
+        error?: string;
+      };
+      if (!response.ok || !body.prompt) {
+        setMessage(body.error || "Export failed");
+        return;
+      }
+      const file = new Blob([body.prompt], {
+        type: "text/plain;charset=utf-8",
+      });
+      const url = URL.createObjectURL(file);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `leetcode-trace-batch-analysis-${new Date().toISOString().slice(0, 10)}.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setMessage(
+        zh
+          ? `已下载全部 ${body.sessionIds?.length ?? 0} 个待分析场次的批量提示词。`
+          : `Downloaded every unanalysed session (${body.sessionIds?.length ?? 0}).`,
+      );
+    } catch {
+      setMessage(
+        zh
+          ? "无法连接本地批量导出服务。刷新页面后重试。"
+          : "Could not reach the local batch export service. Refresh and try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function loadImportFile(file?: File) {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      setImportText(text);
+      setMessage(
+        zh
+          ? `已读取 ${file.name}，确认内容后即可导入。`
+          : `Loaded ${file.name}. Review it, then import.`,
+      );
+    } catch {
+      setMessage(
+        zh ? "无法读取该文件。" : "Could not read that file.",
+      );
+    }
+  }
+  async function importBatch() {
+    setBusy(true);
+    try {
+      const response = await fetch("/api/analysis/batch-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ response: importText }),
+      });
+      const body = (await response.json()) as {
+        imported?: number;
+        errors?: Array<unknown>;
+        error?: string;
+      };
+      if (!response.ok) {
+        setMessage(body.error || "Import failed");
+        return;
+      }
+      setMessage(
+        zh
+          ? `已导入 ${body.imported ?? 0} 个分析${body.errors?.length ? `；${body.errors.length} 行需要修正` : ""}。`
+          : `Imported ${body.imported ?? 0} analyses${body.errors?.length ? `; ${body.errors.length} rows need attention` : ""}.`,
+      );
+      setShowImport(false);
+      setImportText("");
+    } catch {
+      setMessage(
+        zh
+          ? "导入请求失败，请刷新后重试。"
+          : "Import request failed; refresh and retry.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function analyzeApi() {
+    setBusy(true);
+    try {
+      const response = await fetch("/api/analysis/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locale, limit: 10 }),
+      });
+      const body = (await response.json()) as {
+        analyzed?: number;
+        requested?: number;
+        error?: string;
+      };
+      setMessage(
+        response.ok
+          ? zh
+            ? `已通过 API 分析 ${body.analyzed}/${body.requested} 个场次。刷新页面查看画像。`
+            : `API analyzed ${body.analyzed}/${body.requested} sessions. Refresh to see the profile.`
+          : body.error || "Analysis failed",
+      );
+    } catch {
+      setMessage(
+        zh
+          ? "无法连接本地 API 分析服务。"
+          : "Could not reach the local API analysis service.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  const cards = [
+    [zh ? "总场次" : "Sessions", profile.totals.sessions],
+    [
+      zh ? "首次提交 AC" : "First-submit AC",
+      profile.totals.firstSubmitAccepted,
+    ],
+    [
+      zh ? "多次提交才 AC" : "Multiple submits",
+      profile.totals.neededMultipleSubmissions,
+    ],
+    [zh ? "看题解完成" : "Used solution", profile.totals.consultedSolution],
+  ];
+  return (
+    <main className="shell insights-page">
+      <header className="history-hero">
+        <div>
+          <p className="eyebrow">
+            {zh ? "全局学习计划" : "GLOBAL LEARNING PLAN"}
+          </p>
+          <h1>
+            {zh
+              ? "知道弱在哪里，接下来练什么"
+              : "Know what is weak and what to practice next"}
+          </h1>
+          <p className="lede">
+            {zh
+              ? "本地规则计算掌握度、遗忘风险和优先级；AI 用于批量归因与补充建议。"
+              : "Local rules compute mastery, forgetting risk, and priority; AI handles batch attribution and recommendations."}
+          </p>
+        </div>
+      </header>
+      <section className="insight-stats">
+        {cards.map(([label, value]) => (
+          <div key={String(label)}>
+            <b>{value}</b>
+            <span>{label}</span>
+          </div>
+        ))}
+      </section>
+      <section className="batch-card">
+        <div>
+          <p className="eyebrow">{zh ? "批量 AI 分析" : "BATCH AI ANALYSIS"}</p>
+          <h2>
+            {zh
+              ? `${profile.totals.sessions - profile.totals.analyzed} 个场次尚未分析`
+              : `${profile.totals.sessions - profile.totals.analyzed} sessions have not been analyzed`}
+          </h2>
+          <p>
+            {zh
+              ? "手动模式可用于任意 AI；API 模式仅在已配置密钥时可用。"
+              : "Manual mode works with any AI; API mode is available when a key is configured."}
+          </p>
+        </div>
+        <div className="batch-actions">
+          <button
+            className="manual-primary"
+            disabled={busy}
+            onClick={exportBatch}
+          >
+            {zh ? "导出批量提示词" : "Export batch prompt"}
+          </button>
+          <button
+            className="ghost-button"
+            disabled={busy}
+            onClick={() => {
+              setShowImport(true);
+              setMessage("");
+            }}
+          >
+            {zh ? "导入批量结果" : "Import batch result"}
+          </button>
+          <button className="ghost-button" disabled={busy} onClick={analyzeApi}>
+            {zh ? "API 批量分析 10 个" : "Analyze 10 via API"}
+          </button>
+        </div>
+      </section>
+      {message && <p className="success-banner">{message}</p>}
+      <div className="insights-grid">
+        <section>
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">{zh ? "优先复习" : "PRIORITY REVIEWS"}</p>
+              <h2>
+                {zh ? "最需要巩固的具体能力" : "Skills to reinforce first"}
+              </h2>
+            </div>
+          </div>
+          <div className="insight-list">
+            {profile.weaknesses.length ? (
+              profile.weaknesses.slice(0, 8).map((item) => (
+                <div key={item.id}>
+                  <div>
+                    <b>{item.label}</b>
+                    <small>
+                      {item.category} · {item.observations}{" "}
+                      {zh ? "次证据" : "signals"}
+                    </small>
+                  </div>
+                  <strong>{Math.round(item.mastery * 100)}%</strong>
+                </div>
+              ))
+            ) : (
+              <p>
+                {zh
+                  ? "先批量分析场次，系统会生成具体薄弱点。"
+                  : "Batch-analyze sessions to build specific weakness signals."}
+              </p>
+            )}
+          </div>
+        </section>
+        <section>
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">{zh ? "下一批题" : "NEXT PRACTICE"}</p>
+              <h2>{zh ? "建议先重做这些题" : "Re-solve these first"}</h2>
+            </div>
+          </div>
+          <div className="insight-list">
+            {profile.nextQueue.length ? (
+              profile.nextQueue.map((item) => (
+                <div key={item.sessionId}>
+                  <div>
+                    <b>{item.title}</b>
+                    <small>
+                      {zh
+                        ? ({
+                            "No accepted submission in this session":
+                              "本次没有 AC",
+                            "Completed after consulting a solution":
+                              "参考题解后完成",
+                            "Started with no initial idea": "开始时没有思路",
+                          }[item.reason] ?? item.reason)
+                        : item.reason}
+                    </small>
+                  </div>
+                  <strong>{item.priority}</strong>
+                </div>
+              ))
+            ) : (
+              <p>
+                {zh ? "还没有足够的风险信号。" : "No high-risk sessions yet."}
+              </p>
+            )}
+          </div>
+        </section>
+      </div>
+      <section className="topic-section">
+        <p className="eyebrow">{zh ? "题型信号" : "TOPIC SIGNALS"}</p>
+        <div>
+          {profile.topicSignals.map((item) => (
+            <article key={item.label}>
+              <b>{item.label}</b>
+              <span>
+                {item.sessions} {zh ? "场次" : "sessions"}
+              </span>
+              <small>
+                {zh
+                  ? `${item.noAc} 未 AC · ${item.consultedSolution} 看题解`
+                  : `${item.noAc} no AC · ${item.consultedSolution} used solution`}
+              </small>
+            </article>
+          ))}
+        </div>
+      </section>
+      {showImport && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setShowImport(false);
+          }}
+        >
+          <section className="import-modal">
+            <div className="modal-heading">
+              <h2>{zh ? "导入批量 AI 结果" : "Import batch AI results"}</h2>
+              <button onClick={() => setShowImport(false)}>×</button>
+            </div>
+            <p>
+              {zh
+                ? "粘贴 AI 返回的 JSONL，或选择本地文件：每行必须有 sessionId 与 analysis。"
+                : "Paste AI JSONL or choose a local file: every row needs sessionId and analysis."}
+            </p>
+            <label className="batch-file-picker">
+              <span>{zh ? "选择 AI 结果文件" : "Choose AI result file"}</span>
+              <input
+                type="file"
+                accept=".json,.jsonl,.txt,application/json,text/plain"
+                onChange={(event) => void loadImportFile(event.target.files?.[0])}
+              />
+            </label>
+            <textarea
+              autoFocus
+              value={importText}
+              onChange={(event) => setImportText(event.target.value)}
+            />
+            <div className="modal-actions">
+              <button
+                className="ghost-button"
+                onClick={() => setShowImport(false)}
+              >
+                {zh ? "取消" : "Cancel"}
+              </button>
+              <button
+                className="manual-primary"
+                disabled={busy || !importText.trim()}
+                onClick={importBatch}
+              >
+                {zh ? "校验并导入" : "Validate and import"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </main>
+  );
 }

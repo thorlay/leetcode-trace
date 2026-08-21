@@ -27,25 +27,31 @@ ${JSON.stringify(metrics, null, 2)}
 ${attempts}
 
 ## Task
-Analyze the solving trajectory, not merely the final answer. Treat a learner self-assessment as direct evidence, while still weighing it against later attempts. A SOLUTION_CONSULTED marker means the learner viewed an answer or explanation at that point: do not credit algorithm recognition, solution-pattern mastery, or independent completion that appears only after that marker. Make the distinction explicit in the summary and use it to recommend an independent re-solve. Separate recognition or algorithm selection failures from implementation failures. Never infer a weakness only because the final solution uses an algorithm. Cite concrete attempt numbers and code changes.
+Keep this practical and concise. The learner-provided labels are facts: if NO_INITIAL_IDEA or SOLUTION_CONSULTED is present, acknowledge it once in a short clause and do not repeatedly reason about whether the learner independently recognized the solution. Do not narrate the learner's psychology or re-litigate those labels.
 
-Determine the primary blocker, secondary blockers, when the correct algorithm was recognized, whether the main issue was recognition or implementation, recurring concepts, and recommended reviews.
+Focus on three things:
+1. Explain the common solution approach in plain language: the key invariant, why it works, and the reusable pattern. Put this in the single most relevant solutionPatterns item.
+2. For every non-AC SUBMIT, give the concrete code or invariant error and the smallest fix in attemptIssues. Do not turn Run experiments into failures.
+3. Identify one primary learning blocker only when there is evidence. Separate algorithm recognition from implementation mistakes. Never infer a weakness solely because the final code uses an algorithm.
+
+summary must be at most two short sentences: one sentence for the common approach, and one sentence for the most important submission mistake or next independent re-solve. Avoid restating evidence that appears in attemptIssues.
 
 ${instruction}
 
 Return ONLY valid JSON. Do not use Markdown fences or add commentary:
 {
   "schemaVersion": "1.0",
-  "promptVersion": "trajectory-analysis-v3",
+  "promptVersion": "trajectory-analysis-v4",
   "summary": "...",
   "primaryBlocker": { "category": "PATTERN_RECOGNITION", "conceptKey": "prefix_sum.hashmap", "conceptLabel": "...", "severity": 0.0, "confidence": 0.0, "evidence": "...", "explanation": "...", "firstEvidenceAttempt": 1, "resolvedAtAttempt": 4 },
   "secondaryBlockers": [{ "category": "COMPLEXITY_OPTIMIZATION", "conceptKey": "prefix_sum.quadratic_to_linear", "conceptLabel": "...", "severity": 0.0, "confidence": 0.0, "evidence": "...", "explanation": "...", "firstEvidenceAttempt": 2, "resolvedAtAttempt": null }],
   "trajectory": [{ "fromAttempt": 1, "toAttempt": 2, "change": "...", "interpretation": "..." }],
   "strengths": ["..."],
-  "solutionPatterns": [{ "patternKey": "prefix_sum.frequency_map", "patternLabel": "Prefix Sum + Frequency Map", "confidence": 0.0, "evidence": "Attempts 4–5 use a running prefix sum and count prior prefix - k values." }],
+  "solutionPatterns": [{ "patternKey": "prefix_sum.frequency_map", "patternLabel": "Prefix Sum + Frequency Map", "confidence": 0.0, "evidence": "Maintain a running prefix sum and count prior prefix - k values so each new element contributes matching subarrays in O(1)." }],
+  "attemptIssues": [{ "attempt": 1, "verdict": "WRONG_ANSWER", "issue": "...", "fix": "..." }],
   "recommendedReviews": [{ "conceptKey": "prefix_sum.hashmap", "reason": "..." }]
 }
 
 Allowed categories: PROBLEM_MODELING, PATTERN_RECOGNITION, ALGORITHM_SELECTION, INVARIANT_REASONING, STATE_DESIGN, COMPLEXITY_OPTIMIZATION, IMPLEMENTATION, EDGE_CASES, DEBUGGING, LANGUAGE_KNOWLEDGE.
-All severity and confidence values must be between 0 and 1. solutionPatterns must name only specific algorithms or reusable solution patterns demonstrated by the final code or trajectory, not broad LeetCode topic tags. Return no more than three.`;
+All severity and confidence values must be between 0 and 1. solutionPatterns must name only specific algorithms or reusable solution patterns demonstrated by the final code or trajectory, not broad LeetCode topic tags. Return one or two solutionPatterns and no more than five attemptIssues.`;
 }

@@ -25,15 +25,23 @@ const solutionPatternSchema = z.object({
   evidence: z.string().min(10),
 });
 
+const attemptIssueSchema = z.object({
+  attempt: z.number().int().min(1),
+  verdict: z.string().min(1),
+  issue: z.string().min(5),
+  fix: z.string().min(5),
+});
+
 export const trajectoryAnalysisSchema = z.object({
   schemaVersion: z.literal("1.0"),
-  promptVersion: z.enum(["trajectory-analysis-v2", "trajectory-analysis-v3"]),
+  promptVersion: z.enum(["trajectory-analysis-v2", "trajectory-analysis-v3", "trajectory-analysis-v4"]),
   summary: z.string().min(20),
   primaryBlocker: blockerSchema,
   secondaryBlockers: z.array(blockerSchema).max(3),
   trajectory: z.array(z.object({ fromAttempt: z.number().int().min(1), toAttempt: z.number().int().min(1), change: z.string().min(5), interpretation: z.string().min(5) })).max(10),
   strengths: z.array(z.string().min(5)).max(5),
   solutionPatterns: z.array(solutionPatternSchema).max(3).default([]),
+  attemptIssues: z.array(attemptIssueSchema).max(10).default([]),
   recommendedReviews: z.array(z.object({ conceptKey: z.string(), reason: z.string().min(5) })).max(5),
 });
 

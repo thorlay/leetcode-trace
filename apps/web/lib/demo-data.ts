@@ -60,7 +60,7 @@ const codes = [
 
 export const demoAnalysis: AnalysisView = {
   schemaVersion: "1.0",
-  promptVersion: "trajectory-analysis-v3",
+  promptVersion: "trajectory-analysis-v4",
   summary: "The session moved from an invalid sliding-window assumption to quadratic prefix sums, then to prefix-sum frequency lookup. The last bug was the missing initial zero prefix.",
   primaryBlocker: {
     category: "PATTERN_RECOGNITION",
@@ -90,6 +90,12 @@ export const demoAnalysis: AnalysisView = {
   ],
   strengths: ["Once the frequency-map idea appeared, only one localized edge-case fix remained."],
   solutionPatterns: [{ patternKey: "prefix_sum.frequency_map", patternLabel: "Prefix Sum + Frequency Map", confidence: 0.96, evidence: "Attempts 4–5 maintain a running prefix sum and count prior prefix - k values in a frequency map." }],
+  attemptIssues: [
+    { attempt: 1, verdict: "WRONG_ANSWER", issue: "A sliding window is invalid when negative values are allowed.", fix: "Use prefix sums instead of shrinking a window by total order." },
+    { attempt: 2, verdict: "WRONG_ANSWER", issue: "Enumerating all subarrays is correct but not linear-time.", fix: "Turn the prefix difference into a frequency lookup." },
+    { attempt: 3, verdict: "TIME_LIMIT_EXCEEDED", issue: "Each prefix scans every earlier prefix.", fix: "Store prior prefix frequencies in a hash map." },
+    { attempt: 4, verdict: "WRONG_ANSWER", issue: "The empty prefix was missing.", fix: "Initialize the frequency map with {0: 1}." },
+  ],
   recommendedReviews: [{ conceptKey: "prefix_sum.hashmap", reason: "Practice converting prefix-difference equations into lookup queries." }],
 };
 

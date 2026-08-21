@@ -39,6 +39,7 @@ export type AnalysisView = {
   trajectory?: Array<{ fromAttempt: number; toAttempt: number; change: string; interpretation: string }>;
   strengths: string[];
   solutionPatterns?: Array<{ patternKey: string; patternLabel: string; confidence: number; evidence: string }>;
+  attemptIssues?: Array<{ attempt: number; verdict: string; issue: string; fix: string }>;
   recommendedReviews: Array<{ conceptKey: string; reason: string }>;
 };
 

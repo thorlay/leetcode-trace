@@ -1,6 +1,8 @@
 import type { ApiRequest, AttemptAction, AttemptVerdict, PageEvent, PageSnapshot, ProblemInfo, SelfAssessment } from "../lib/types";
 
-const TWO_HOURS = 2 * 60 * 60 * 1000;
+// A same-problem retry within one day belongs to one learning session, matching
+// the history import reconstruction rule.
+const SESSION_GAP = 24 * 60 * 60 * 1000;
 const VERDICT_TIMEOUT = 60 * 1000;
 
 type ApiResponse<T> = { ok: boolean; status: number; data: T & { error?: string } };
@@ -39,12 +41,14 @@ function api<T>(message: ApiRequest): Promise<ApiResponse<T>> {
   return chrome.runtime.sendMessage(message) as Promise<ApiResponse<T>>;
 }
 
-function sessionFor(slug: string, allowRecentlyCompleted = false) {
+function sessionFor(slug: string, allowRecentlyCompleted = true) {
   const now = Date.now();
-  if (allowRecentlyCompleted && recentlyCompletedSession?.slug === slug && now - recentlyCompletedSession.completedAt < TWO_HOURS) {
-    return recentlyCompletedSession.id;
+  if (allowRecentlyCompleted && recentlyCompletedSession?.slug === slug && now - recentlyCompletedSession.completedAt < SESSION_GAP) {
+    currentSession = { id: recentlyCompletedSession.id, slug, lastActivity: now };
+    void chrome.runtime.sendMessage({ type: "TRACK_SESSION", sessionId: currentSession.id });
+    return currentSession.id;
   }
-  if (!currentSession || currentSession.slug !== slug || now - currentSession.lastActivity >= TWO_HOURS) {
+  if (!currentSession || currentSession.slug !== slug || now - currentSession.lastActivity >= SESSION_GAP) {
     if (currentSession) void api({ type: "API_REQUEST", path: `/api/sessions/${currentSession.id}/end`, method: "PATCH", body: { status: "ABANDONED" } });
     currentSession = { id: crypto.randomUUID(), slug, lastActivity: now };
     void chrome.runtime.sendMessage({ type: "TRACK_SESSION", sessionId: currentSession.id });

@@ -7,12 +7,12 @@ import { analyzeAndPersistSession } from "./analyze-session";
 
 const batchLineSchema = trajectoryAnalysisSchema.transform((analysis) => analysis);
 
-export async function pendingAnalysisSessionIds(limit = 25) {
-  const rows = await prisma.problemSession.findMany({ where: { OR: [{ analysis: null }, { analysisStatus: { in: ["PENDING", "FAILED"] } }] }, orderBy: { startedAt: "asc" }, take: Math.min(Math.max(limit, 1), 100), select: { id: true } });
+export async function pendingAnalysisSessionIds(limit = 1000) {
+  const rows = await prisma.problemSession.findMany({ where: { OR: [{ analysis: null }, { analysisStatus: { in: ["PENDING", "FAILED"] } }] }, orderBy: { startedAt: "asc" }, take: Math.min(Math.max(limit, 1), 1000), select: { id: true } });
   return rows.map((row) => row.id);
 }
 
-export async function exportBatchAnalysis(locale: "en" | "zh", limit = 5) {
+export async function exportBatchAnalysis(locale: "en" | "zh", limit = 1000) {
   const ids = await pendingAnalysisSessionIds(limit);
   const records = await Promise.all(ids.map(async (sessionId) => {
     const session = await getSession(sessionId);

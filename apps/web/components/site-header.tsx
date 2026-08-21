@@ -8,7 +8,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const chinese = pathname === "/zh" || pathname.startsWith("/zh/");
   const sessionMatch = pathname.match(/\/(?:zh\/)?sessions\/([^/]+)/);
-  const section = pathname.includes("/history") ? "history" : pathname.includes("/problems") ? "problems" : pathname.includes("/data") ? "data" : pathname.includes("/weaknesses") ? "weaknesses" : pathname.includes("/reviews") ? "reviews" : null;
+  const section = pathname.includes("/history") ? "history" : pathname.includes("/problems") ? "problems" : pathname.includes("/insights") ? "insights" : pathname.includes("/data") ? "data" : pathname.includes("/weaknesses") ? "weaknesses" : pathname.includes("/reviews") ? "reviews" : null;
   const alternateHref = sessionMatch
     ? chinese ? `/sessions/${sessionMatch[1]}` : `/zh/sessions/${sessionMatch[1]}`
     : section ? chinese ? `/${section}` : `/zh/${section}` : chinese ? "/" : "/zh";
@@ -25,6 +25,7 @@ export function SiteHeader() {
         <Link className={section === "history" || Boolean(sessionMatch) ? "nav-active" : ""} href={chinese ? "/zh/history" : "/history"}>{chinese ? "解题记录" : "Sessions"}</Link>
         <Link className={section === "problems" ? "nav-active" : ""} href={chinese ? "/zh/problems" : "/problems"}>{chinese ? "题目" : "Problems"}</Link>
         <Link className={section === "weaknesses" ? "nav-active" : ""} href={chinese ? "/zh/weaknesses" : "/weaknesses"}>{chinese ? "薄弱项" : "Weaknesses"}</Link>
+        <Link className={section === "insights" ? "nav-active" : ""} href={chinese ? "/zh/insights" : "/insights"}>{chinese ? "学习计划" : "Plan"}</Link>
         <Link className={section === "reviews" ? "nav-active" : ""} href={chinese ? "/zh/reviews" : "/reviews"}>{chinese ? "复习" : "Reviews"}</Link>
       </nav>
       <div className="header-actions">

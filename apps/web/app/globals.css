@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+@import "./insights.css";
 
 :root { --ink:#16231d; --muted:#748078; --paper:#f6f7f2; --card:#fff; --line:#e4e7df; --green:#173f31; --mint:#dceadd; --orange:#d86737; --peach:#f7e4d7; }
 * { box-sizing: border-box; }

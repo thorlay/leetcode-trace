@@ -12,7 +12,7 @@ export async function pendingAnalysisSessionIds(limit = 25) {
   return rows.map((row) => row.id);
 }
 
-export async function exportBatchAnalysis(locale: "en" | "zh", limit = 25) {
+export async function exportBatchAnalysis(locale: "en" | "zh", limit = 5) {
   const ids = await pendingAnalysisSessionIds(limit);
   const records = await Promise.all(ids.map(async (sessionId) => {
     const session = await getSession(sessionId);

@@ -8,7 +8,7 @@ const selectors = {
   statement: ["[data-track-load='description_content']", "[data-cy='question-content']", "[data-testid='question-content']"],
   language: ["button[id*='headlessui-listbox-button']", "button[class*='rounded'][class*='text-label']", "[data-cy='lang-select']"],
   textarea: ["textarea[data-mode-id]", ".monaco-editor textarea", "textarea"],
-  result: ["[data-e2e-locator='submission-result']", "[data-cy='result-state']", "[data-testid='submission-result']", "div[class*='result']"],
+  result: ["[data-e2e-locator='submission-result']", "[data-e2e-locator='console-result']", "[data-e2e-locator='console-result-title']", "[data-cy='result-state']", "[data-cy='result-title']", "[data-testid='submission-result']", "[data-testid*='result']", "[role='alert']", "div[class*='result']"],
 } as const;
 
 const verdicts: Array<[string, AttemptVerdict]> = [
@@ -161,7 +161,10 @@ export const leetcodeAdapter = {
   observeVerdict(callback: (verdict: AttemptVerdict) => void) {
     let lastVerdict = "";
     const detect = () => {
-      const resultText = selectors.result.map((selector) => document.querySelector<HTMLElement>(selector)?.innerText ?? "").join("\n");
+      // LeetCode frequently changes the result panel's generated classes. Prefer known
+      // containers, then fall back to visible document text after a result-panel mutation.
+      const selectedText = selectors.result.map((selector) => document.querySelector<HTMLElement>(selector)?.innerText ?? "").join("\n");
+      const resultText = selectedText || document.body?.innerText || "";
       for (const [label, verdict] of verdicts) {
         if (resultText.includes(label) && lastVerdict !== verdict) { lastVerdict = verdict; callback(verdict); return; }
       }

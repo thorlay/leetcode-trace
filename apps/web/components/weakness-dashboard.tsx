@@ -2,18 +2,18 @@ import Link from "next/link";
 import type { WeaknessCategorySummary, WeaknessView } from "@/lib/weaknesses";
 
 const categoryLabels: Record<string, [string, string]> = {
-  PATTERN_RECOGNITION: ["Pattern recognition", "模式识别"], IMPLEMENTATION: ["Implementation", "代码实现"], INVARIANT_REASONING: ["Invariant reasoning", "不变量推理"], COMPLEXITY_OPTIMIZATION: ["Complexity", "复杂度优化"], EDGE_CASES: ["Edge cases", "边界情况"],
+  PROBLEM_MODELING: ["Problem modeling", "问题建模"], PATTERN_RECOGNITION: ["Pattern recognition", "模式识别"], ALGORITHM_SELECTION: ["Algorithm selection", "算法选择"], INVARIANT_REASONING: ["Invariant reasoning", "不变量推理"], STATE_DESIGN: ["State design", "状态设计"], COMPLEXITY_OPTIMIZATION: ["Complexity", "复杂度优化"], IMPLEMENTATION: ["Implementation", "代码实现"], EDGE_CASES: ["Edge cases", "边界情况"], DEBUGGING: ["Debugging", "调试"], LANGUAGE_KNOWLEDGE: ["Language knowledge", "语言知识"],
 };
 
 export function WeaknessDashboard({ weaknesses, categories, locale }: { weaknesses: WeaknessView[]; categories: WeaknessCategorySummary[]; locale: "en" | "zh" }) {
   const zh = locale === "zh";
   const localizedConcept = (key: string, fallback: string) => key === "prefix_sum.hashmap" && zh ? "前缀和 + 频次表转换" : fallback;
   return <main className="shell profile-page">
-    <header className="profile-hero"><p className="eyebrow">{zh ? "个人学习画像" : "YOUR LEARNING PROFILE"}</p><h1>{zh ? "你的薄弱点，正在变得清晰" : "Your failure profile"}</h1><p>{zh ? "只有重复出现的卡点才会被标记为长期薄弱项。" : "Isolated mistakes stay quiet. Recurring patterns become focused practice."}</p></header>
+    <header className="profile-hero"><p className="eyebrow">{zh ? "核心算法画像" : "CORE ALGORITHM PROFILE"}</p><h1>{zh ? "把注意力放在解题思路上" : "Focus on solving approaches"}</h1><p>{zh ? "这里优先展示建模、模式识别、算法选择、状态、不变量与复杂度；实现和语法细节不会干扰主视图。" : "This view prioritizes modeling, patterns, algorithm choice, state, invariants, and complexity; implementation details stay out of the way."}</p></header>
     <section className="profile-summary">
       {categories.length ? categories.map((item) => <div key={item.category}><span>{categoryLabels[item.category]?.[zh ? 1 : 0] ?? item.category}</span><div className="profile-bar"><i style={{ width: `${item.percentage}%` }} /></div><b>{item.percentage}%</b></div>) : <p className="dashboard-empty">{zh ? "完成一次 AI 分析后会显示分类分布。" : "Category distribution appears after your first AI analysis."}</p>}
     </section>
-    <section className="weakness-list-section"><div className="section-heading"><div><p className="eyebrow">{zh ? "重复模式" : "RECURRING PATTERNS"}</p><h2>{zh ? "需要重点练习" : "Weaknesses to practice"}</h2></div></div>
+    <section className="weakness-list-section"><div className="section-heading"><div><p className="eyebrow">{zh ? "核心模式" : "CORE PATTERNS"}</p><h2>{zh ? "优先巩固的算法能力" : "Algorithm skills to reinforce"}</h2></div></div>
       <div className="weakness-grid">{weaknesses.length ? weaknesses.map((weakness) => <article className="weakness-card" key={weakness.id}>
         <div className="weakness-top"><span>{categoryLabels[weakness.category]?.[zh ? 1 : 0] ?? weakness.category}</span>{weakness.recurring && <b>{zh ? "重复出现" : "Recurring"}</b>}</div>
         <h3>{localizedConcept(weakness.conceptKey, weakness.conceptLabel)}</h3><code>{weakness.conceptKey}</code>

@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { getSessionOutcome } from "./session-outcome";
 import { getSubmissionProficiency } from "./submission-proficiency";
+import { isCoreAlgorithmCategory } from "./core-learning";
 
 export type LearningProfile = {
   totals: { sessions: number; analyzed: number; firstSubmitAccepted: number; neededMultipleSubmissions: number; consultedSolution: number; noInitialIdea: number };
@@ -36,7 +37,7 @@ export async function getLearningProfile(): Promise<LearningProfile> {
   const now = Date.now();
   return {
     totals: { sessions: sessions.length, analyzed: sessions.filter((session) => Boolean(session.analysis)).length, firstSubmitAccepted, neededMultipleSubmissions, consultedSolution, noInitialIdea },
-    weaknesses: weaknesses.map((weakness) => ({ id: weakness.id, conceptKey: weakness.conceptKey, label: weakness.conceptLabel, category: weakness.category, mastery: weakness.masteryScore, observations: weakness.observationCount, nextReviewAt: weakness.nextReviewAt?.toISOString() ?? null, priority: Math.round(((1 - weakness.masteryScore) * 100 + weakness.observationCount * 8 + (weakness.nextReviewAt?.getTime() ?? now) <= now ? 20 : 0)) })).sort((a, b) => b.priority - a.priority),
+    weaknesses: weaknesses.filter((weakness) => isCoreAlgorithmCategory(weakness.category)).map((weakness) => ({ id: weakness.id, conceptKey: weakness.conceptKey, label: weakness.conceptLabel, category: weakness.category, mastery: weakness.masteryScore, observations: weakness.observationCount, nextReviewAt: weakness.nextReviewAt?.toISOString() ?? null, priority: Math.round((1 - weakness.masteryScore) * 100 + weakness.observationCount * 8 + ((weakness.nextReviewAt?.getTime() ?? now) <= now ? 20 : 0)) })).sort((a, b) => b.priority - a.priority),
     topicSignals: [...topics.entries()].map(([label, value]) => ({ label, ...value })).sort((a, b) => (b.neededMultipleSubmissions + b.consultedSolution * 0.7) - (a.neededMultipleSubmissions + a.consultedSolution * 0.7)).slice(0, 10),
     nextQueue: candidates.sort((a, b) => b.priority - a.priority).slice(0, 8),
   };

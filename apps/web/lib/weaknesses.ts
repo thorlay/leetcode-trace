@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { CORE_ALGORITHM_CATEGORIES } from "./core-learning";
 
 export type WeaknessView = {
   id: string;
@@ -13,9 +14,9 @@ export type WeaknessView = {
 
 export type WeaknessCategorySummary = { category: string; count: number; percentage: number };
 
-export async function getWeaknesses(): Promise<WeaknessView[]> {
+export async function getWeaknesses(coreOnly = false): Promise<WeaknessView[]> {
   try {
-    const rows = await prisma.weakness.findMany({ where: { observationCount: { gt: 0 } }, orderBy: [{ masteryScore: "asc" }, { observationCount: "desc" }] });
+    const rows = await prisma.weakness.findMany({ where: { observationCount: { gt: 0 }, ...(coreOnly ? { category: { in: [...CORE_ALGORITHM_CATEGORIES] } } : {}) }, orderBy: [{ masteryScore: "asc" }, { observationCount: "desc" }] });
     if (!rows.length) return [];
     const observations = await prisma.weaknessObservation.findMany({ include: { session: { include: { problem: true } } } });
     return rows.map((row) => ({
@@ -26,9 +27,9 @@ export async function getWeaknesses(): Promise<WeaknessView[]> {
   } catch { return []; }
 }
 
-export async function getWeaknessCategorySummary(): Promise<WeaknessCategorySummary[]> {
+export async function getWeaknessCategorySummary(coreOnly = false): Promise<WeaknessCategorySummary[]> {
   try {
-    const rows = await prisma.weakness.groupBy({ by: ["category"], _sum: { observationCount: true }, orderBy: { _sum: { observationCount: "desc" } } });
+    const rows = await prisma.weakness.groupBy({ by: ["category"], where: coreOnly ? { category: { in: [...CORE_ALGORITHM_CATEGORIES] } } : undefined, _sum: { observationCount: true }, orderBy: { _sum: { observationCount: "desc" } } });
     const total = rows.reduce((sum, row) => sum + (row._sum.observationCount ?? 0), 0);
     return rows.map((row) => ({ category: row.category, count: row._sum.observationCount ?? 0, percentage: total ? Math.round(((row._sum.observationCount ?? 0) / total) * 100) : 0 }));
   } catch { return []; }

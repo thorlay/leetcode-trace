@@ -28,6 +28,18 @@ function firstText(candidates: readonly string[]) {
   return "";
 }
 
+function actionButtonFromEvent(event: Event) {
+  const elements = event.composedPath().filter((value): value is Element => value instanceof Element);
+  return elements.map((element) => element.closest<HTMLElement>("button, [role='button']")).find((element): element is HTMLElement => Boolean(element));
+}
+
+function matchesAction(event: Event, action: "run" | "submit") {
+  const target = actionButtonFromEvent(event);
+  if (!target) return false;
+  const label = [target.innerText, target.getAttribute("aria-label"), target.getAttribute("data-e2e-locator"), target.getAttribute("data-cy")].filter(Boolean).join(" ").toLowerCase();
+  return label.includes(action);
+}
+
 /** LeetCode has used both seconds and milliseconds in different history responses.
  * Prefer `timestamp`: `time` may be a UI label or a runtime duration. */
 export function submissionTimestampToIso(row: Record<string, unknown>) {
@@ -144,16 +156,14 @@ export const leetcodeAdapter = {
   problemInfo(): ProblemInfo { return { problemSlug: this.getProblemSlug(), problemTitle: this.getProblemTitle(), problemStatement: this.getProblemStatement() }; },
   observeRun(callback: () => void) {
     const listener = (event: Event) => {
-      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>("button");
-      if (target?.innerText.trim().toLowerCase() === "run") callback();
+      if (matchesAction(event, "run")) callback();
     };
     document.addEventListener("click", listener, true);
     return () => document.removeEventListener("click", listener, true);
   },
   observeSubmit(callback: () => void) {
     const listener = (event: Event) => {
-      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>("button");
-      if (target?.innerText.trim().toLowerCase() === "submit") callback();
+      if (matchesAction(event, "submit")) callback();
     };
     document.addEventListener("click", listener, true);
     return () => document.removeEventListener("click", listener, true);

@@ -4,6 +4,7 @@ import { buildTrajectoryPrompt } from "../ai/trajectoryPrompt";
 import { trajectoryAnalysisSchema, type TrajectoryAnalysis } from "../ai/schemas";
 import { persistAnalysis } from "./persist-analysis";
 import { analyzeAndPersistSession } from "./analyze-session";
+import { parseRepairableAiJson } from "../ai/json-repair";
 
 const batchLineSchema = trajectoryAnalysisSchema.transform((analysis) => analysis);
 
@@ -29,7 +30,7 @@ export async function importBatchAnalysis(raw: string) {
   let imported = 0; const errors: Array<{ line: number; error: string }> = [];
   for (let index = 0; index < lines.length; index += 1) {
     try {
-      const row = JSON.parse(lines[index]) as { sessionId?: unknown; analysis?: unknown };
+      const row = parseRepairableAiJson(lines[index]) as { sessionId?: unknown; analysis?: unknown };
       if (typeof row.sessionId !== "string") throw new Error("sessionId is required");
       const analysis: TrajectoryAnalysis = batchLineSchema.parse(row.analysis);
       const session = await getSession(row.sessionId);

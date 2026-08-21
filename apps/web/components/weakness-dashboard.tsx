@@ -19,7 +19,7 @@ export function WeaknessDashboard({ weaknesses, categories, locale }: { weakness
         <h3>{localizedConcept(weakness.conceptKey, weakness.conceptLabel)}</h3><code>{weakness.conceptKey}</code>
         <div className="mastery-row"><div><span>{zh ? "掌握度" : "Mastery"}</span><strong>{Math.round(weakness.masteryScore * 100)}%</strong></div><div className="mastery-meter"><i style={{ width: `${weakness.masteryScore * 100}%` }} /></div></div>
         <p>{zh ? `已在 ${weakness.observationCount} 次解题中观察到` : `Observed across ${weakness.observationCount} problem sessions`}</p>
-        <div className="weakness-sessions">{weakness.sessions.map((session) => <Link key={session.id} href={`${zh ? "/zh" : ""}/sessions/${session.id}`}>LC560 · {zh ? "和为 K 的子数组" : session.title}</Link>)}</div>
+        <div className="weakness-sessions">{weakness.sessions.map((session) => <Link key={session.id} href={`${zh ? "/zh" : ""}/sessions/${session.id}`}>{session.title}</Link>)}</div>
         <Link className="practice-link" href={`${zh ? "/zh" : ""}/reviews?weakness=${weakness.id}`}>{zh ? "开始针对性练习" : "Practice this concept"} →</Link>
       </article>) : <p className="dashboard-empty">{zh ? "还没有薄弱项。" : "No weaknesses have been identified yet."}</p>}</div>
     </section>

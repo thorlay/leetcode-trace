@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: leetcode
+      POSTGRES_PASSWORD: leetcode
+      POSTGRES_DB: leetcode_review
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leetcode -d leetcode_review"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - leetcode-review-data:/var/lib/postgresql/data
+
+volumes:
+  leetcode-review-data:

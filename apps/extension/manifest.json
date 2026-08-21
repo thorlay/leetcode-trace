@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Reviewly — LeetCode Capture",
+  "version": "0.1.0",
+  "description": "Capture LeetCode solution attempts for private, local learning analysis.",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["http://localhost:3000/*"],
+  "background": { "service_worker": "dist/background.js" },
+  "action": { "default_popup": "popup.html", "default_title": "Reviewly Capture" },
+  "content_scripts": [{
+    "matches": ["https://leetcode.com/*", "https://www.leetcode.com/*", "https://leetcode.cn/*", "https://www.leetcode.cn/*"],
+    "js": ["dist/content/index.js"],
+    "run_at": "document_start"
+  }],
+  "web_accessible_resources": [{
+    "resources": ["dist/page/index.js"],
+    "matches": ["https://leetcode.com/*", "https://www.leetcode.com/*", "https://leetcode.cn/*", "https://www.leetcode.cn/*"]
+  }]
+}

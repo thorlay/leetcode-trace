@@ -1,0 +1,19 @@
+{
+  "name": "leetcode-review",
+  "private": true,
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "dev": "pnpm --filter @leetcode-review/web dev",
+    "build": "pnpm --filter @leetcode-review/web build && pnpm --filter @leetcode-review/extension build",
+    "build:web": "pnpm --filter @leetcode-review/web build",
+    "build:extension": "pnpm --filter @leetcode-review/extension build",
+    "test": "pnpm --filter @leetcode-review/web test",
+    "lint": "pnpm --filter @leetcode-review/web lint",
+    "db:generate": "pnpm --filter @leetcode-review/web db:generate",
+    "db:migrate": "pnpm --filter @leetcode-review/web db:migrate",
+    "db:seed": "pnpm --filter @leetcode-review/web db:seed",
+    "leetcode:dump": "tsx scripts/leetcode-dump-import.ts",
+    "leetcode:metadata": "tsx scripts/leetcode-metadata-sync.ts"
+  },
+  "devDependencies": {}
+}

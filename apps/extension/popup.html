@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reviewly Capture</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+      body { width: 310px; margin: 0; padding: 18px; color: #17231d; background: #f7f8f4; }
+      header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+      .mark { display: grid; place-items: center; width: 32px; height: 32px; color: white; background: #173f31; border-radius: 9px; font-weight: 800; }
+      h1 { margin: 0; font-size: 16px; } header p { margin: 2px 0 0; color: #78827b; font-size: 11px; }
+      .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 13px; background: white; border: 1px solid #e1e5de; border-radius: 10px; }
+      .toggle-row strong { display: block; font-size: 13px; }.toggle-row span { color: #828b84; font-size: 10px; }
+      .switch { position: relative; width: 42px; height: 24px; }.switch input { opacity: 0; width: 0; height: 0; }
+      .slider { position: absolute; inset: 0; cursor: pointer; background: #bdc5bf; border-radius: 20px; transition: .2s; }.slider:before { content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:white; border-radius:50%; transition:.2s; box-shadow:0 1px 3px #0002; }
+      input:checked + .slider { background:#2d6d50; } input:checked + .slider:before { transform:translateX(18px); }
+      button { width: 100%; margin-top: 12px; padding: 11px; border: 0; border-radius: 9px; color: white; background: #173f31; font-weight: 700; cursor: pointer; }
+      button.secondary { color:#173f31; background:#e5ece5; border:1px solid #cfdbd0; }
+      .stuck-card { margin-top:12px; padding:12px; background:#fff; border:1px solid #e1e5de; border-radius:10px; }.stuck-card strong{display:block;font-size:12px}.stuck-card span{display:block;margin:3px 0 8px;color:#828b84;font-size:10px}.stuck-card select,.stuck-card textarea{width:100%;border:1px solid #d7ded7;border-radius:7px;padding:8px;background:#fff;color:#27352d;font:11px Inter,ui-sans-serif,sans-serif}.stuck-card textarea{min-height:45px;margin-top:7px;resize:vertical}.stuck-card button{margin-top:7px;background:#9d623e}
+      button:disabled { opacity:.45; cursor:not-allowed; }.status { min-height: 30px; margin: 12px 2px 0; color:#68736b; font-size:11px; line-height:1.45; }.privacy { border-top:1px solid #e1e5de; margin-top:12px; padding-top:10px; color:#929991; font-size:9px; line-height:1.45; }
+      .history-link { display:block; margin-top:9px; color:#2d6048; font-size:11px; font-weight:700; text-decoration:none; }
+    </style>
+  </head>
+  <body>
+    <header><div class="mark">R</div><div><h1>Reviewly Capture</h1><p>Local LeetCode learning recorder</p></div></header>
+    <div class="toggle-row"><div><strong>Automatic capture</strong><span>Run and Submit buttons</span></div><label class="switch"><input id="enabled" type="checkbox" /><i class="slider"></i></label></div>
+    <button id="capture">Capture snapshot</button>
+    <section class="stuck-card"><strong>标记学习过程 · Learning marker</strong><span>记录一开始的卡点，或在参考题解后标记答案来源。</span><select id="self-assessment"><option value="NO_INITIAL_IDEA">完全没思路 · No initial idea</option><option value="ALGORITHM_SELECTION">有方向但选不出算法 · Cannot choose algorithm</option><option value="IMPLEMENTATION_STUCK">知道算法但实现卡住 · Stuck implementing</option><option value="SOLUTION_CONSULTED">看了答案 / 题解后完成 · Used solution</option></select><textarea id="stuck-note" maxlength="2000" placeholder="可选备注：例如看了哪部分题解？"></textarea><button id="mark-stuck">保存标记 · Save marker</button></section>
+    <button id="import-history" class="secondary">Import LeetCode history</button>
+    <p id="status" class="status">Open a LeetCode problem to capture code.</p>
+    <a class="history-link" href="http://localhost:3000/history" target="_blank">View imported history →</a>
+    <p class="privacy">Only normalized problem, submission, code, language, verdict, runtime, and memory data are sent to localhost. Cookies, credentials, browsing history, and keystrokes are never collected.</p>
+    <script src="dist/popup/index.js"></script>
+  </body>
+</html>

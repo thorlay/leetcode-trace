@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SessionStatus {
+  ACTIVE
+  SOLVED
+  ABANDONED
+}
+
+enum AnalysisStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum AttemptAction {
+  RUN
+  SUBMIT
+  MANUAL
+}
+
+enum SelfAssessment {
+  NO_INITIAL_IDEA
+  ALGORITHM_SELECTION
+  IMPLEMENTATION_STUCK
+  SOLUTION_CONSULTED
+}
+
+enum AttemptVerdict {
+  ACCEPTED
+  WRONG_ANSWER
+  TIME_LIMIT_EXCEEDED
+  MEMORY_LIMIT_EXCEEDED
+  RUNTIME_ERROR
+  COMPILE_ERROR
+  UNKNOWN
+}
+
+enum BlockerCategory {
+  PROBLEM_MODELING
+  PATTERN_RECOGNITION
+  ALGORITHM_SELECTION
+  INVARIANT_REASONING
+  STATE_DESIGN
+  COMPLEXITY_OPTIMIZATION
+  IMPLEMENTATION
+  EDGE_CASES
+  DEBUGGING
+  LANGUAGE_KNOWLEDGE
+}
+
+enum ReviewStatus {
+  PENDING
+  COMPLETED
+  SKIPPED
+}
+
+enum ReviewRating {
+  AGAIN
+  HARD
+  GOOD
+  EASY
+}
+
+enum CaptureCompleteness {
+  FINAL_ONLY
+  SUBMISSIONS_ONLY
+  FULL
+}
+
+enum TrajectoryStatus {
+  NONE
+  AVAILABLE
+  ANALYZED
+}
+
+model Problem {
+  id         String           @id @default(uuid())
+  slug       String           @unique
+  title      String
+  statement  String           @db.Text
+  difficulty String?
+  frontendId String?
+  isPremium Boolean?
+  acceptanceRate Float?
+  likes      Int?
+  dislikes   Int?
+  firstSolvedAt DateTime?
+  lastSolvedAt DateTime?
+  tags       ProblemTag[]
+  patterns   ProblemPattern[]
+  sessions   ProblemSession[]
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+}
+
+model ProblemTag {
+  id        String   @id @default(uuid())
+  problemId String
+  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  slug      String
+  label     String
+
+  @@unique([problemId, slug])
+  @@index([slug])
+}
+
+model ProblemPattern {
+  id         String   @id @default(uuid())
+  problemId  String
+  problem    Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  patternKey String
+  label      String
+  confidence Float
+  evidence   String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([problemId, patternKey])
+  @@index([patternKey])
+}
+
+model ProblemSession {
+  id             String                @id @default(uuid())
+  problemId      String
+  problem        Problem               @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  startedAt      DateTime
+  endedAt        DateTime?
+  status         SessionStatus         @default(ACTIVE)
+  analysisStatus AnalysisStatus        @default(PENDING)
+  captureCompleteness CaptureCompleteness @default(FULL)
+  trajectoryStatus TrajectoryStatus    @default(NONE)
+  attempts       Attempt[]
+  analysis       SessionAnalysis?
+  observations   WeaknessObservation[]
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+}
+
+model Attempt {
+  id             String          @id @default(uuid())
+  eventId        String          @unique
+  submissionId   String?         @unique
+  sessionId      String
+  session        ProblemSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sequenceNumber Int
+  action         AttemptAction
+  language       String
+  code           String          @db.Text
+  codeHash       String
+  verdict        AttemptVerdict?
+  runtime        String?
+  memory         String?
+  selfAssessment SelfAssessment?
+  note           String?         @db.Text
+  createdAt      DateTime
+
+  @@unique([sessionId, sequenceNumber])
+  @@index([sessionId, createdAt])
+}
+
+model SessionAnalysis {
+  id                        String            @id @default(uuid())
+  sessionId                 String            @unique
+  session                   ProblemSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  summary                   String            @db.Text
+  primaryBlockerCategory    BlockerCategory
+  primaryConcept            String
+  primaryConceptLabel       String
+  primaryConfidence         Float
+  timeToFirstAttemptSeconds Int
+  timeToAcceptedSeconds     Int?
+  attemptCount              Int
+  failedAttemptCount        Int
+  promptVersion             String
+  model                     String
+  userFeedback              String?
+  rawJson                   Json
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
+}
+
+model WeaknessObservation {
+  id           String            @id @default(uuid())
+  sessionId    String
+  session      ProblemSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  category     BlockerCategory
+  conceptKey   String
+  conceptLabel String
+  severity     Float
+  confidence   Float
+  evidence     String            @db.Text
+  explanation  String            @db.Text
+  createdAt    DateTime          @default(now())
+
+  @@index([conceptKey])
+  @@unique([sessionId, conceptKey])
+}
+
+model Weakness {
+  id               String            @id @default(uuid())
+  category         BlockerCategory
+  conceptKey       String            @unique
+  conceptLabel     String
+  observationCount Int               @default(0)
+  masteryScore     Float             @default(0.5)
+  lastObservedAt   DateTime
+  lastReviewedAt   DateTime?
+  nextReviewAt     DateTime?
+  intervalDays     Int               @default(1)
+  reviewTasks      ReviewTask[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model ReviewTask {
+  id               String          @id @default(uuid())
+  weaknessId       String
+  weakness         Weakness        @relation(fields: [weaknessId], references: [id], onDelete: Cascade)
+  type             String
+  question         String          @db.Text
+  expectedConcepts Json
+  difficulty       Int
+  status           ReviewStatus    @default(PENDING)
+  scheduledAt      DateTime
+  completedAt      DateTime?
+  attempts         ReviewAttempt[]
+  promptVersion    String?
+  model            String?
+  createdAt        DateTime        @default(now())
+}
+
+model ReviewAttempt {
+  id           String       @id @default(uuid())
+  reviewTaskId String
+  reviewTask   ReviewTask   @relation(fields: [reviewTaskId], references: [id], onDelete: Cascade)
+  answer       String       @db.Text
+  feedback     String       @db.Text
+  rating       ReviewRating
+  score        Float
+  promptVersion String
+  model         String
+  rawJson       Json
+  createdAt    DateTime     @default(now())
+}

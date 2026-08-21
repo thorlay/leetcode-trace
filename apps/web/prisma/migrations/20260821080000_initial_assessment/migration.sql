@@ -1,0 +1,5 @@
+CREATE TYPE "SelfAssessment" AS ENUM ('NO_INITIAL_IDEA', 'ALGORITHM_SELECTION', 'IMPLEMENTATION_STUCK');
+
+ALTER TABLE "Attempt"
+  ADD COLUMN "selfAssessment" "SelfAssessment",
+  ADD COLUMN "note" TEXT;

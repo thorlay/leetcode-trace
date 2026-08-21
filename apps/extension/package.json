@@ -1,0 +1,13 @@
+{
+  "name": "@leetcode-review/extension",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc --noEmit && rm -rf dist && esbuild src/content/index.ts src/page/index.ts src/popup/index.ts src/background.ts --bundle --format=iife --target=chrome114 --outdir=dist"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.326",
+    "esbuild": "^0.25.9",
+    "typescript": "^5.9.2"
+  }
+}

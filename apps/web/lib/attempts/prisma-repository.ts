@@ -27,7 +27,10 @@ export function prismaAttemptRepository(tx: Prisma.TransactionClient): AttemptIn
       return (aggregate._max.sequenceNumber ?? 0) + 1;
     },
     async createAttempt(input) {
-      return tx.attempt.create({ data: { ...input, selfAssessment: input.selfAssessment, note: input.note }, select: { id: true, eventId: true, sessionId: true, sequenceNumber: true } });
+      const attempt = await tx.attempt.create({ data: { ...input, selfAssessment: input.selfAssessment, note: input.note }, select: { id: true, eventId: true, sessionId: true, sequenceNumber: true } });
+      if (input.selfAssessment === "SOLUTION_CONSULTED") await tx.problemSession.update({ where: { id: input.sessionId }, data: { solutionConsulted: true, analysisStatus: "PENDING" } });
+      else if (input.selfAssessment) await tx.problemSession.update({ where: { id: input.sessionId }, data: { initialAssessment: input.selfAssessment, analysisStatus: "PENDING" } });
+      return attempt;
     },
   };
 }

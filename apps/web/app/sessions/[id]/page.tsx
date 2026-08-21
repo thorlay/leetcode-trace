@@ -30,7 +30,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
         <div className="session-stats"><div><span>Status</span><b className={outcome === "ACCEPTED" ? "status-solved" : outcome === "NO_AC" ? "status-no-ac" : ""}>{outcome === "ACCEPTED" ? "● Solved" : outcome === "NO_AC" ? "● No AC" : "● Active"}</b></div><div><span>{outcome === "ACCEPTED" ? "Solved in" : "Elapsed"}</span><b>{minutes === null ? "—" : `${minutes} min`}</b></div><div><span>{unsuccessfulSubmissionCount ? "Unsuccessful submissions" : "Attempts"}</span><b>{unsuccessfulSubmissionCount || session.attempts.length}</b></div></div>
       </header>
       <section className="timeline-heading"><div><p className="eyebrow">ATTEMPT TIMELINE</p><h2>{outcome === "ACCEPTED" ? "From first idea to accepted" : "From first idea to outcome"}</h2></div><p>Select any version to inspect the code.</p></section>
-      <SessionExplorer sessionId={session.id} attempts={session.attempts} initialAnalysis={session.analysis} initialFeedback={session.analysisFeedback} />
+      <SessionExplorer sessionId={session.id} attempts={session.attempts} initialAnalysis={session.analysis} initialFeedback={session.analysisFeedback} initialAssessment={session.initialAssessment} solutionConsulted={session.solutionConsulted} />
     </main>
   );
 }

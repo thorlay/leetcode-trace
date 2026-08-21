@@ -32,7 +32,7 @@ export default async function ChineseSessionPage({ params }: { params: Promise<{
         <div className="session-stats"><div><span>状态</span><b className={outcome === "ACCEPTED" ? "status-solved" : outcome === "NO_AC" ? "status-no-ac" : ""}>{outcome === "ACCEPTED" ? "● 已 AC" : outcome === "NO_AC" ? "● 未 AC" : "● 进行中"}</b></div><div><span>解题用时</span><b>{minutes === null ? "—" : `${minutes} 分钟`}</b></div><div><span>{unsuccessfulSubmissionCount ? "未通过提交" : "尝试次数"}</span><b>{unsuccessfulSubmissionCount || session.attempts.length}</b></div></div>
       </header>
       <section className="timeline-heading"><div><p className="eyebrow">尝试时间线</p><h2>{outcome === "ACCEPTED" ? "从第一个思路到最终通过" : "从第一个思路到本次结果"}</h2></div><p>选择任意版本查看当时的代码。</p></section>
-      <SessionExplorer sessionId={session.id} attempts={session.attempts} initialAnalysis={localizeAnalysisToChinese(session.analysis)} initialFeedback={session.analysisFeedback} locale="zh" />
+      <SessionExplorer sessionId={session.id} attempts={session.attempts} initialAnalysis={localizeAnalysisToChinese(session.analysis)} initialFeedback={session.analysisFeedback} initialAssessment={session.initialAssessment} solutionConsulted={session.solutionConsulted} locale="zh" />
     </main>
   );
 }

@@ -7,6 +7,7 @@ export function buildTrajectoryPrompt(session: SessionView, locale: "en" | "zh" 
   const historicalWarning = session.captureCompleteness === "FULL" ? "" : locale === "zh"
     ? `\n## 数据完整性警告\n本记录的完整度为 ${session.captureCompleteness}。这些是历史提交快照，可能缺少 Run、未提交的中间编辑和完整思考过程。不得假设相邻提交代表完整解题过程；降低相关判断的置信度，并只引用实际存在的证据。\n`
     : `\n## Capture completeness warning\nThis record is ${session.captureCompleteness}. These are historical submission snapshots and may omit Runs, unsubmitted edits, and intermediate reasoning. Do not assume adjacent submissions represent the complete solving process. Lower confidence where evidence is missing and cite only observed evidence.\n`;
+  const learningLabels = session.initialAssessment || session.solutionConsulted ? `\n## Learner-provided labels\n${session.initialAssessment ? `Initial assessment: ${session.initialAssessment}\n` : ""}${session.solutionConsulted ? "The learner marked this session as completed after consulting an answer or explanation.\n" : ""}` : "";
   const attempts = session.attempts.map((attempt) => `## Attempt ${attempt.sequenceNumber}\n\nTime: ${attempt.createdAt}\nAction: ${attempt.action}\nResult: ${attempt.verdict ?? "UNKNOWN"}\nLanguage: ${attempt.language}${attempt.selfAssessment ? `\nLearner self-assessment at this point: ${attempt.selfAssessment}` : ""}${attempt.note ? `\nLearner note: ${attempt.note}` : ""}\n\n\`\`\`${attempt.language}\n${attempt.code}\n\`\`\``).join("\n\n");
   return `# LeetCode Trajectory Analysis
 
@@ -16,6 +17,7 @@ ${session.problem.title}
 ## Problem Statement
 ${session.problem.statement || "Not available."}
 ${historicalWarning}
+${learningLabels}
 
 ## Deterministic Metrics
 \`\`\`json

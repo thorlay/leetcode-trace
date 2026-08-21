@@ -48,6 +48,8 @@ export type SessionView = {
   analysisStatus: string;
   captureCompleteness: "FINAL_ONLY" | "SUBMISSIONS_ONLY" | "FULL";
   trajectoryStatus: "NONE" | "AVAILABLE" | "ANALYZED";
+  initialAssessment?: "NO_INITIAL_IDEA" | "ALGORITHM_SELECTION" | "IMPLEMENTATION_STUCK" | null;
+  solutionConsulted?: boolean;
   startedAt: string;
   endedAt: string | null;
   problem: { slug: string; title: string; statement: string };

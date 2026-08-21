@@ -16,6 +16,8 @@ export async function getSession(id: string): Promise<SessionView | null> {
       analysisStatus: session.analysisStatus,
       captureCompleteness: session.captureCompleteness ?? "FULL",
       trajectoryStatus: session.trajectoryStatus ?? (session.analysis ? "ANALYZED" : session.attempts.length >= 2 ? "AVAILABLE" : "NONE"),
+      initialAssessment: session.initialAssessment === "SOLUTION_CONSULTED" ? null : session.initialAssessment,
+      solutionConsulted: session.solutionConsulted,
       startedAt: session.startedAt.toISOString(),
       endedAt: session.endedAt?.toISOString() ?? null,
       problem: { slug: session.problem.slug, title: session.problem.title, statement: session.problem.statement },

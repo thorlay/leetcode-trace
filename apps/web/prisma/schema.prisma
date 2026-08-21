@@ -137,6 +137,8 @@ model ProblemSession {
   analysisStatus AnalysisStatus        @default(PENDING)
   captureCompleteness CaptureCompleteness @default(FULL)
   trajectoryStatus TrajectoryStatus    @default(NONE)
+  initialAssessment SelfAssessment?
+  solutionConsulted Boolean            @default(false)
   attempts       Attempt[]
   analysis       SessionAnalysis?
   observations   WeaknessObservation[]

@@ -27,7 +27,7 @@ function verdictLabel(attempt: AttemptView, locale: "en" | "zh") {
   return locale === "zh" ? (zhVerdicts[value] ?? value) : titleCase(value);
 }
 
-export function SessionExplorer({ sessionId, attempts, initialAnalysis, initialFeedback, locale = "en" }: { sessionId: string; attempts: AttemptView[]; initialAnalysis: AnalysisView | null; initialFeedback?: string | null; locale?: "en" | "zh" }) {
+export function SessionExplorer({ sessionId, attempts, initialAnalysis, initialFeedback, initialAssessment: initialAssessmentProp, solutionConsulted: solutionConsultedProp = false, locale = "en" }: { sessionId: string; attempts: AttemptView[]; initialAnalysis: AnalysisView | null; initialFeedback?: string | null; initialAssessment?: "NO_INITIAL_IDEA" | "ALGORITHM_SELECTION" | "IMPLEMENTATION_STUCK" | null; solutionConsulted?: boolean; locale?: "en" | "zh" }) {
   const [selected, setSelected] = useState(attempts.length - 1);
   const [showDiff, setShowDiff] = useState(false);
   const [analysis, setAnalysis] = useState(initialAnalysis);
@@ -38,12 +38,23 @@ export function SessionExplorer({ sessionId, attempts, initialAnalysis, initialF
   const [editText, setEditText] = useState("");
   const [feedback, setFeedback] = useState(initialFeedback ?? "");
   const [manualMessage, setManualMessage] = useState("");
+  const [initialAssessment, setInitialAssessment] = useState(initialAssessmentProp ?? null);
+  const [solutionConsulted, setSolutionConsulted] = useState(solutionConsultedProp);
   const router = useRouter();
   const attempt = attempts[selected];
   const previous = selected > 0 ? attempts[selected - 1] : null;
   const changes = useMemo(() => previous ? diffLines(previous.code, attempt.code) : [], [attempt, previous]);
   const zh = locale === "zh";
   const categoryLabel = (value: string) => zh ? (zhCategories[value] ?? value) : titleCase(value);
+
+  async function saveLearningLabels(update: { initialAssessment?: "NO_INITIAL_IDEA" | "ALGORITHM_SELECTION" | "IMPLEMENTATION_STUCK" | null; solutionConsulted?: boolean }) {
+    const response = await fetch(`/api/sessions/${sessionId}/learning`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(update) });
+    const body = await response.json() as { initialAssessment?: typeof initialAssessment; solutionConsulted?: boolean; error?: string };
+    if (!response.ok) { setManualMessage(body.error || (zh ? "学习标记保存失败" : "Could not save learning label")); return; }
+    if (update.initialAssessment !== undefined) setInitialAssessment(body.initialAssessment ?? null);
+    if (update.solutionConsulted !== undefined) setSolutionConsulted(body.solutionConsulted ?? false);
+    setManualMessage(zh ? "学习标记已保存。下次 AI 分析会使用这项信息。" : "Learning label saved. Your next AI analysis will use it.");
+  }
 
   async function analyze() {
     setAnalysisState("loading");
@@ -116,6 +127,11 @@ export function SessionExplorer({ sessionId, attempts, initialAnalysis, initialF
           <div><button className="ghost-button" disabled={!previous} onClick={() => setShowDiff((value) => !value)}>{showDiff ? (zh ? "显示当前版本" : "Show snapshot") : (zh ? "与上一版对比" : "Compare with previous")}</button><span className={`verdict-badge ${attempt.verdict === "ACCEPTED" ? "success" : "danger"}`}>{verdictLabel(attempt, locale)}</span></div>
         </div>
         <pre className="code-view"><code>{attempt.selfAssessment ? <span>{attempt.selfAssessment === "SOLUTION_CONSULTED" ? (zh ? "此处标记：参考了答案或题解。之后的通过不应视为独立完成。" : "Marked here: a solution or explanation was consulted. Later acceptance should not be treated as independent solving.") : (zh ? "尚未开始写代码。" : "No code had been written yet.")}{attempt.note ? `\n\n${zh ? "备注：" : "Note: "}${attempt.note}` : ""}</span> : showDiff && previous ? changes.map((part, index) => <span key={index} className={part.added ? "line-added" : part.removed ? "line-removed" : ""}>{part.value}</span>) : attempt.code}</code></pre>
+      </section>
+
+      <section className="learning-label-card">
+        <div><p className="eyebrow">{zh ? "学习标记" : "LEARNING LABELS"}</p><h2>{zh ? "补充这次解题是如何完成的" : "Record how this solution was reached"}</h2><p>{zh ? "适用于历史导入和实时记录；会保存到本地，并加入下一次 AI 分析。" : "Works for imported history and live sessions. Saved locally and included in your next AI analysis."}</p></div>
+        <div className="learning-controls"><div><span>{zh ? "开始时" : "At the start"}</span><div className="learning-buttons"><button className={initialAssessment === "NO_INITIAL_IDEA" ? "selected" : ""} onClick={() => void saveLearningLabels({ initialAssessment: initialAssessment === "NO_INITIAL_IDEA" ? null : "NO_INITIAL_IDEA" })}>{zh ? "完全没思路" : "No initial idea"}</button><button className={initialAssessment === "ALGORITHM_SELECTION" ? "selected" : ""} onClick={() => void saveLearningLabels({ initialAssessment: initialAssessment === "ALGORITHM_SELECTION" ? null : "ALGORITHM_SELECTION" })}>{zh ? "算法选择卡住" : "Algorithm selection"}</button><button className={initialAssessment === "IMPLEMENTATION_STUCK" ? "selected" : ""} onClick={() => void saveLearningLabels({ initialAssessment: initialAssessment === "IMPLEMENTATION_STUCK" ? null : "IMPLEMENTATION_STUCK" })}>{zh ? "实现卡住" : "Implementation stuck"}</button></div></div><label className="solution-toggle"><input type="checkbox" checked={solutionConsulted} onChange={(event) => void saveLearningLabels({ solutionConsulted: event.target.checked })} /><span>{zh ? "最终提交前参考了答案或题解" : "Consulted an answer or explanation before the final submission"}</span></label></div>
       </section>
 
       <section className="analysis-section">

@@ -15,9 +15,9 @@ export type WeaknessView = {
 
 export type WeaknessCategorySummary = { category: string; count: number; percentage: number };
 
-export async function getWeaknesses(coreOnly = false): Promise<WeaknessView[]> {
+export async function getWeaknesses(coreOnly = false, minObservations = MIN_RECURRING_WEAKNESS_OBSERVATIONS): Promise<WeaknessView[]> {
   try {
-    const rows = await prisma.weakness.findMany({ where: { observationCount: { gte: MIN_RECURRING_WEAKNESS_OBSERVATIONS }, ...(coreOnly ? { category: { in: [...CORE_ALGORITHM_CATEGORIES] } } : {}) }, orderBy: [{ masteryScore: "asc" }, { observationCount: "desc" }] });
+    const rows = await prisma.weakness.findMany({ where: { observationCount: { gte: minObservations }, ...(coreOnly ? { category: { in: [...CORE_ALGORITHM_CATEGORIES] } } : {}) }, orderBy: [{ masteryScore: "asc" }, { observationCount: "desc" }] });
     if (!rows.length) return [];
     const observations = await prisma.weaknessObservation.findMany({ include: { session: { include: { problem: true } } } });
     return rows.map((row) => ({

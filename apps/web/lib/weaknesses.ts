@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { CORE_ALGORITHM_CATEGORIES } from "./core-learning";
+import { MIN_RECURRING_WEAKNESS_OBSERVATIONS } from "./analysis/weakness-signal";
 
 export type WeaknessView = {
   id: string;
@@ -16,7 +17,7 @@ export type WeaknessCategorySummary = { category: string; count: number; percent
 
 export async function getWeaknesses(coreOnly = false): Promise<WeaknessView[]> {
   try {
-    const rows = await prisma.weakness.findMany({ where: { observationCount: { gt: 0 }, ...(coreOnly ? { category: { in: [...CORE_ALGORITHM_CATEGORIES] } } : {}) }, orderBy: [{ masteryScore: "asc" }, { observationCount: "desc" }] });
+    const rows = await prisma.weakness.findMany({ where: { observationCount: { gte: MIN_RECURRING_WEAKNESS_OBSERVATIONS }, ...(coreOnly ? { category: { in: [...CORE_ALGORITHM_CATEGORIES] } } : {}) }, orderBy: [{ masteryScore: "asc" }, { observationCount: "desc" }] });
     if (!rows.length) return [];
     const observations = await prisma.weaknessObservation.findMany({ include: { session: { include: { problem: true } } } });
     return rows.map((row) => ({
@@ -29,7 +30,7 @@ export async function getWeaknesses(coreOnly = false): Promise<WeaknessView[]> {
 
 export async function getWeaknessCategorySummary(coreOnly = false): Promise<WeaknessCategorySummary[]> {
   try {
-    const rows = await prisma.weakness.groupBy({ by: ["category"], where: coreOnly ? { category: { in: [...CORE_ALGORITHM_CATEGORIES] } } : undefined, _sum: { observationCount: true }, orderBy: { _sum: { observationCount: "desc" } } });
+    const rows = await prisma.weakness.groupBy({ by: ["category"], where: { observationCount: { gte: MIN_RECURRING_WEAKNESS_OBSERVATIONS }, ...(coreOnly ? { category: { in: [...CORE_ALGORITHM_CATEGORIES] } } : {}) }, _sum: { observationCount: true }, orderBy: { _sum: { observationCount: "desc" } } });
     const total = rows.reduce((sum, row) => sum + (row._sum.observationCount ?? 0), 0);
     return rows.map((row) => ({ category: row.category, count: row._sum.observationCount ?? 0, percentage: total ? Math.round(((row._sum.observationCount ?? 0) / total) * 100) : 0 }));
   } catch { return []; }

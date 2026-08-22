@@ -2,6 +2,7 @@ import { prisma } from "./prisma";
 import { getSessionOutcome } from "./session-outcome";
 import { getSubmissionProficiency } from "./submission-proficiency";
 import { isCoreAlgorithmCategory } from "./core-learning";
+import { MIN_RECURRING_WEAKNESS_OBSERVATIONS } from "./analysis/weakness-signal";
 
 export type LearningProfile = {
   totals: { sessions: number; analyzed: number; firstSubmitAccepted: number; neededMultipleSubmissions: number; consultedSolution: number; noInitialIdea: number };
@@ -13,7 +14,7 @@ export type LearningProfile = {
 export async function getLearningProfile(): Promise<LearningProfile> {
   const [sessions, weaknesses] = await Promise.all([
     prisma.problemSession.findMany({ orderBy: { startedAt: "desc" }, include: { attempts: true, analysis: true, problem: { include: { tags: true, patterns: true } } }, take: 1000 }),
-    prisma.weakness.findMany({ where: { observationCount: { gt: 0 } }, orderBy: { masteryScore: "asc" }, take: 30 }),
+    prisma.weakness.findMany({ where: { observationCount: { gte: MIN_RECURRING_WEAKNESS_OBSERVATIONS } }, orderBy: { masteryScore: "asc" }, take: 30 }),
   ]);
   let firstSubmitAccepted = 0; let neededMultipleSubmissions = 0; let consultedSolution = 0; let noInitialIdea = 0;
   const topics = new Map<string, { sessions: number; firstSubmitAccepted: number; neededMultipleSubmissions: number; noAc: number; consultedSolution: number }>();

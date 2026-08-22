@@ -36,6 +36,11 @@ Focus on three things:
 
 summary must be at most two short sentences: one sentence for the common approach, and one sentence for the most important submission mistake or next independent re-solve. Avoid restating evidence that appears in attemptIssues.
 
+## Weakness aggregation rules
+category is only a broad reporting bucket. A conceptKey must name one concrete, reusable faulty decision from the observed code, such as monotonic_stack.pop_until_invariant, prefix_sum.query_before_update, backtracking.restore_state, trie.prefix_vs_substring, or dp.reachability_window.
+
+Never use generic keys or labels such as invariant.core, *.invariant, complexity.optimization, *.complexity, implementation.general, "core invariant", or "complexity optimization". If the attempts do not show a specific learning blocker, return primaryBlocker with conceptKey "insufficient_evidence.no_actionable_blocker", conceptLabel "Insufficient evidence for a specific blocker", severity 0, confidence 0, and no secondaryBlockers. This record will be retained as analysis but excluded from weakness statistics.
+
 ${instruction}
 
 Return ONLY valid JSON. Do not use Markdown fences or add commentary:

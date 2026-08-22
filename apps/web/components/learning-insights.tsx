@@ -138,6 +138,32 @@ export function LearningInsights({
       setBusy(false);
     }
   }
+  function exportNextProblemPrompt() {
+    const input = {
+      coreWeaknesses: profile.weaknesses.map((item) => ({ conceptKey: item.conceptKey, label: item.label, category: item.category, observations: item.observations, mastery: item.mastery })),
+      topicSignals: profile.topicSignals,
+      revisitCandidates: profile.nextQueue,
+    };
+    const prompt = [
+      "# LeetCode Next-Problem Recommendation",
+      "",
+      "Choose the next 5 LeetCode problems for this learner. Prioritize one concrete core algorithm skill per recommendation; do not recommend generic implementation drills. Balance one confidence-building problem with progressively harder transfer problems. Avoid simply repeating listed revisit candidates unless you explicitly recommend a re-solve.",
+      "",
+      "Learner profile:",
+      JSON.stringify(input, null, 2),
+      "",
+      "Return ONLY valid JSON:",
+      '{"recommendations":[{"title":"...","slug":"...","difficulty":"Easy | Medium | Hard","conceptKey":"...","learningGoal":"...","reason":"...","kind":"NEW | RESOLVE"}]}',
+    ].join("\n");
+    const file = new Blob([prompt], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "leetcode-trace-next-problems-" + new Date().toISOString().slice(0, 10) + ".txt";
+    link.click();
+    URL.revokeObjectURL(url);
+    setMessage(zh ? "已下载 AI 下一题推荐提示词。粘贴到任意 AI 即可。" : "Downloaded the AI next-problem recommendation prompt.");
+  }
   const cards = [
     [zh ? "总场次" : "Sessions", profile.totals.sessions],
     [
@@ -211,6 +237,9 @@ export function LearningInsights({
           </button>
           <button className="ghost-button" disabled={busy} onClick={analyzeApi}>
             {zh ? "API 批量分析 10 个" : "Analyze 10 via API"}
+          </button>
+          <button className="ghost-button" disabled={busy} onClick={exportNextProblemPrompt}>
+            {zh ? "AI 推荐下一题" : "AI recommend next problems"}
           </button>
         </div>
       </section>

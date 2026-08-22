@@ -37,7 +37,7 @@ export function ReviewSession({ initialTasks, locale }: { initialTasks: Task[]; 
 
   function next() { setAnswer(""); setResult(null); setIndex((value) => value + 1); }
 
-  if (!task) return <section className="review-empty"><div>✓</div><h1>{zh ? "今天的复习已完成" : "You're caught up"}</h1><p>{zh ? "可以从薄弱项生成新的针对性练习。" : "Generate a focused question from your current weaknesses."}</p><button className="primary-button" onClick={generate} disabled={busy}>{busy ? (zh ? "生成中…" : "Generating…") : (zh ? "生成复习题" : "Generate review")}</button>{error && <p className="error-banner">{error}</p>}</section>;
+  if (!task) return <section className="review-empty"><div>✓</div><h1>{zh ? "今天的复习已完成" : "You're caught up"}</h1><p>{zh ? "生成一组核心算法复习题：优先复习重复弱点；暂未重复时，用具体信号做一次验证复习。" : "Generate core-algorithm reviews: recurring weaknesses first, then specific one-off signals as validation."}</p><button className="primary-button" onClick={generate} disabled={busy}>{busy ? (zh ? "生成中…" : "Generating…") : (zh ? "生成复习题" : "Generate review")}</button>{error && <p className="error-banner">{error}</p>}</section>;
 
   const question = zh && task.weakness.conceptKey === "prefix_sum.hashmap" ? "一个数组包含正数和负数。你需要统计和为 K 的连续子数组，但暂时不写代码：你会先尝试什么方法？为什么？" : task.question;
   return <main className="review-page shell">

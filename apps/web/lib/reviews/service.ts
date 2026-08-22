@@ -3,9 +3,17 @@ import { generateReviewQuestion } from "../ai/reviewGenerator";
 import { evaluateReviewAnswer } from "../ai/reviewEvaluator";
 import { prisma } from "../prisma";
 import { scheduleReview } from "./scheduler";
+import { CORE_ALGORITHM_CATEGORIES } from "../core-learning";
+import { MIN_RECURRING_WEAKNESS_OBSERVATIONS } from "../analysis/weakness-signal";
 
 export async function generateReviewTasks(locale: "en" | "zh" = "en", weaknessId?: string) {
-  const weaknesses = await prisma.weakness.findMany({ where: weaknessId ? { id: weaknessId } : {}, orderBy: { masteryScore: "asc" }, take: 6 });
+  const recurringWhere = weaknessId ? { id: weaknessId } : { category: { in: [...CORE_ALGORITHM_CATEGORIES] }, observationCount: { gte: MIN_RECURRING_WEAKNESS_OBSERVATIONS } };
+  let weaknesses = await prisma.weakness.findMany({ where: recurringWhere, orderBy: { masteryScore: "asc" }, take: 6 });
+  // Before a pattern repeats, a single specific signal can still be useful as a
+  // low-stakes validation prompt. Generic implementation issues never qualify.
+  if (!weaknessId && weaknesses.length === 0) {
+    weaknesses = await prisma.weakness.findMany({ where: { category: { in: [...CORE_ALGORITHM_CATEGORIES] }, observationCount: { gte: 1 } }, orderBy: { lastObservedAt: "desc" }, take: 4 });
+  }
   const created = [];
   for (const weakness of weaknesses) {
     const pending = await prisma.reviewTask.findFirst({ where: { weaknessId: weakness.id, status: "PENDING" } });
@@ -18,7 +26,7 @@ export async function generateReviewTasks(locale: "en" | "zh" = "en", weaknessId
 
 export async function getTodayReviewTasks() {
   const end = new Date(); end.setHours(23, 59, 59, 999);
-  return prisma.reviewTask.findMany({ where: { status: "PENDING", scheduledAt: { lte: end } }, include: { weakness: true }, orderBy: { scheduledAt: "asc" } });
+  return prisma.reviewTask.findMany({ where: { status: "PENDING", scheduledAt: { lte: end }, weakness: { category: { in: [...CORE_ALGORITHM_CATEGORIES] }, observationCount: { gte: 1 } } }, include: { weakness: true }, orderBy: { scheduledAt: "asc" } });
 }
 
 export async function answerReviewTask(taskId: string, answer: string, locale: "en" | "zh" = "en") {

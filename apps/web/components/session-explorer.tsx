@@ -390,68 +390,24 @@ export function SessionExplorer({
       <section className="learning-label-card">
         <div>
           <p className="eyebrow">{zh ? "学习标记" : "LEARNING LABELS"}</p>
-          <h2>
-            {zh
-              ? "补充这次解题是如何完成的"
-              : "Record how this solution was reached"}
-          </h2>
           <p>
             {zh
-              ? "适用于历史导入和实时记录；会保存到本地，并加入下一次 AI 分析。"
-              : "Works for imported history and live sessions. Saved locally and included in your next AI analysis."}
+              ? "可选：帮助 AI 区分独立完成与参考后完成。"
+              : "Optional: helps AI distinguish independent and assisted completion."}
           </p>
         </div>
         <div className="learning-controls">
-          <div>
-            <span>{zh ? "开始时" : "At the start"}</span>
-            <div className="learning-buttons">
-              <button
-                className={
-                  initialAssessment === "NO_INITIAL_IDEA" ? "selected" : ""
-                }
-                onClick={() =>
-                  void saveLearningLabels({
-                    initialAssessment:
-                      initialAssessment === "NO_INITIAL_IDEA"
-                        ? null
-                        : "NO_INITIAL_IDEA",
-                  })
-                }
-              >
-                {zh ? "完全没思路" : "No initial idea"}
-              </button>
-              <button
-                className={
-                  initialAssessment === "ALGORITHM_SELECTION" ? "selected" : ""
-                }
-                onClick={() =>
-                  void saveLearningLabels({
-                    initialAssessment:
-                      initialAssessment === "ALGORITHM_SELECTION"
-                        ? null
-                        : "ALGORITHM_SELECTION",
-                  })
-                }
-              >
-                {zh ? "算法选择卡住" : "Algorithm selection"}
-              </button>
-              <button
-                className={
-                  initialAssessment === "IMPLEMENTATION_STUCK" ? "selected" : ""
-                }
-                onClick={() =>
-                  void saveLearningLabels({
-                    initialAssessment:
-                      initialAssessment === "IMPLEMENTATION_STUCK"
-                        ? null
-                        : "IMPLEMENTATION_STUCK",
-                  })
-                }
-              >
-                {zh ? "实现卡住" : "Implementation stuck"}
-              </button>
-            </div>
-          </div>
+          <button
+            className={initialAssessment === "NO_INITIAL_IDEA" ? "selected" : ""}
+            onClick={() =>
+              void saveLearningLabels({
+                initialAssessment:
+                  initialAssessment === "NO_INITIAL_IDEA" ? null : "NO_INITIAL_IDEA",
+              })
+            }
+          >
+            {zh ? "一开始没思路" : "No initial idea"}
+          </button>
           <label className="solution-toggle">
             <input
               type="checkbox"
@@ -464,8 +420,8 @@ export function SessionExplorer({
             />
             <span>
               {zh
-                ? "最终提交前参考了答案或题解"
-                : "Consulted an answer or explanation before the final submission"}
+                ? "看过题解 / 答案"
+                : "Consulted a solution"}
             </span>
           </label>
         </div>

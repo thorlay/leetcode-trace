@@ -6,12 +6,13 @@ const SESSION_GAP = 24 * 60 * 60 * 1000;
 const VERDICT_TIMEOUT = 60 * 1000;
 
 type ApiResponse<T> = { ok: boolean; status: number; data: T & { error?: string } };
-type PendingAttempt = { id: string; sessionId: string; timer: number };
+type PendingAttempt = { id: string; sessionId: string; slug: string; action: AttemptAction; timer: number };
 
 let currentSession: { id: string; slug: string; lastActivity: number } | null = null;
 let recentlyCompletedSession: { id: string; slug: string; completedAt: number } | null = null;
 let pending: PendingAttempt | null = null;
 let earlyVerdict: AttemptVerdict | null = null;
+let captureInFlight = false;
 let captureQueue: Promise<void> = Promise.resolve();
 let historyQueue: Promise<void> = Promise.resolve();
 let historyRunning = false;
@@ -57,17 +58,27 @@ function sessionFor(slug: string, allowRecentlyCompleted = true) {
 }
 
 async function finalizePending(verdict: AttemptVerdict) {
-  if (!pending) { earlyVerdict = verdict; return; }
+  if (!pending) return;
   const target = pending;
   pending = null;
   clearTimeout(target.timer);
   const response = await api<{ id: string }>({ type: "API_REQUEST", path: `/api/attempts/${target.id}/verdict`, method: "PATCH", body: { verdict } });
   if (!response.ok) { await setStatus(response.data.error || "Verdict could not be saved", "error"); return; }
-  await setStatus(verdict === "ACCEPTED" ? "Accepted attempt saved and session completed." : `${verdict.replaceAll("_", " ")} saved.`, "success");
-  if (verdict === "ACCEPTED") {
-    recentlyCompletedSession = { id: target.sessionId, slug: currentSession?.slug ?? "", completedAt: Date.now() };
+  const completesSession = target.action === "SUBMIT" && verdict === "ACCEPTED";
+  await setStatus(
+    completesSession
+      ? "Accepted submission saved; session completed."
+      : verdict === "ACCEPTED"
+        ? "Accepted Run saved; continue in the same session."
+        : `${verdict.replaceAll("_", " ")} saved.`,
+    "success",
+  );
+  if (completesSession) {
+    recentlyCompletedSession = { id: target.sessionId, slug: target.slug, completedAt: Date.now() };
     currentSession = null;
     void chrome.runtime.sendMessage({ type: "UNTRACK_SESSION" });
+  } else if (currentSession?.id === target.sessionId) {
+    currentSession.lastActivity = Date.now();
   }
 }
 
@@ -97,7 +108,7 @@ async function capture(snapshot: PageSnapshot, action: AttemptAction) {
     return;
   }
   const timer = window.setTimeout(() => void finalizePending("UNKNOWN"), VERDICT_TIMEOUT);
-  pending = { id: response.data.id, sessionId, timer };
+  pending = { id: response.data.id, sessionId, slug: snapshot.problemSlug, action, timer };
   await setStatus(`Attempt v${response.data.sequenceNumber} saved; waiting for verdict…`, "info");
   if (earlyVerdict) {
     const verdict = earlyVerdict;
@@ -138,10 +149,18 @@ window.addEventListener("message", (event: MessageEvent<PageEvent>) => {
   if (event.data.kind === "ACTION") {
     const { snapshot, action } = event.data;
     earlyVerdict = null;
-    captureQueue = captureQueue.then(() => capture(snapshot, action)).catch((error) => setStatus(error instanceof Error ? error.message : "Capture failed", "error"));
+    captureInFlight = true;
+    captureQueue = captureQueue
+      .then(() => capture(snapshot, action))
+      .catch((error) => setStatus(error instanceof Error ? error.message : "Capture failed", "error"))
+      .finally(() => { captureInFlight = false; });
   } else if (event.data.kind === "VERDICT") {
     const { verdict } = event.data;
-    void enabled().then((isEnabled) => { if (isEnabled) void finalizePending(verdict); });
+    void enabled().then((isEnabled) => {
+      if (!isEnabled) return;
+      if (pending) void finalizePending(verdict);
+      else if (captureInFlight) earlyVerdict = verdict;
+    });
   } else if (event.data.kind === "SNAPSHOT") {
     snapshotRequests.get(event.data.requestId)?.(event.data.snapshot);
     snapshotRequests.delete(event.data.requestId);

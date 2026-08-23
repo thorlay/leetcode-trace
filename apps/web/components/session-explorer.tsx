@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { diffLines } from "diff";
 import type { AnalysisView, AttemptView } from "@/lib/types";
+import { groupConsecutiveAttempts, type AttemptGroup } from "@/lib/attempts/group-consecutive";
 
 function titleCase(value: string) {
   return value
@@ -60,6 +61,28 @@ function verdictLabel(attempt: AttemptView, locale: "en" | "zh") {
   return locale === "zh" ? (zhVerdicts[value] ?? value) : titleCase(value);
 }
 
+function groupVersionLabel(group: AttemptGroup) {
+  const first = group.attempts[0].sequenceNumber;
+  const last = group.attempts.at(-1)!.sequenceNumber;
+  return first === last ? `v${first}` : `v${first}–v${last}`;
+}
+
+function groupResultLabel(group: AttemptGroup, locale: "en" | "zh") {
+  const counts = new Map<string, number>();
+  for (const attempt of group.attempts) {
+    const action = locale === "zh"
+      ? ({ RUN: "运行", SUBMIT: "提交", MANUAL: "保存" }[attempt.action])
+      : titleCase(attempt.action);
+    const label = attempt.selfAssessment
+      ? verdictLabel(attempt, locale)
+      : attempt.verdict
+        ? `${action} ${verdictLabel(attempt, locale)}`
+        : action;
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+  return [...counts].map(([label, count]) => `${label}${count > 1 ? ` ×${count}` : ""}`).join(" · ");
+}
+
 export function SessionExplorer({
   sessionId,
   attempts,
@@ -81,7 +104,8 @@ export function SessionExplorer({
   solutionConsulted?: boolean;
   locale?: "en" | "zh";
 }) {
-  const [selected, setSelected] = useState(attempts.length - 1);
+  const groups = useMemo(() => groupConsecutiveAttempts(attempts), [attempts]);
+  const [selected, setSelected] = useState(groups.length - 1);
   const [showDiff, setShowDiff] = useState(false);
   const [analysis, setAnalysis] = useState(initialAnalysis);
   const [analysisState, setAnalysisState] = useState<
@@ -100,8 +124,10 @@ export function SessionExplorer({
     solutionConsultedProp,
   );
   const router = useRouter();
-  const attempt = attempts[selected];
-  const previous = selected > 0 ? attempts[selected - 1] : null;
+  const selectedGroup = groups[selected];
+  const attempt = selectedGroup.attempts[0];
+  const latestAttempt = selectedGroup.attempts.at(-1)!;
+  const previous = selected > 0 ? groups[selected - 1].attempts[0] : null;
   const changes = useMemo(
     () => (previous ? diffLines(previous.code, attempt.code) : []),
     [attempt, previous],
@@ -277,7 +303,10 @@ export function SessionExplorer({
           <p>20:00</p>
           <b>{zh ? "开始" : "Started"}</b>
         </div>
-        {attempts.map((item, index) => (
+        {groups.map((group, index) => {
+          const item = group.attempts[0];
+          const latest = group.attempts.at(-1)!;
+          return (
           <button
             key={item.id}
             className={`attempt-node ${selected === index ? "selected" : ""}`}
@@ -288,14 +317,14 @@ export function SessionExplorer({
           >
             <span
               className={
-                item.verdict === "ACCEPTED"
+                latest.verdict === "ACCEPTED"
                   ? "accepted"
-                  : item.verdict === "TIME_LIMIT_EXCEEDED"
+                  : latest.verdict === "TIME_LIMIT_EXCEEDED"
                     ? "warning"
                     : "failed"
               }
             >
-              {index + 1}
+              {group.attempts.length > 1 ? `×${group.attempts.length}` : group.firstIndex + 1}
             </span>
             <p>
               {new Date(item.createdAt).toLocaleTimeString([], {
@@ -303,10 +332,11 @@ export function SessionExplorer({
                 minute: "2-digit",
               })}
             </p>
-            <b>v{item.sequenceNumber}</b>
-            <small>{verdictLabel(item, locale)}</small>
+            <b>{groupVersionLabel(group)}</b>
+            <small>{groupResultLabel(group, locale)}</small>
           </button>
-        ))}
+          );
+        })}
       </section>
 
       <section className="code-card">
@@ -321,7 +351,7 @@ export function SessionExplorer({
                 : zh
                   ? "尝试"
                   : "Attempt"}{" "}
-              v{attempt.sequenceNumber}
+              {groupVersionLabel(selectedGroup)}
             </strong>
             <span className="lang-pill">
               {attempt.selfAssessment
@@ -344,9 +374,9 @@ export function SessionExplorer({
                   : "Compare with previous"}
             </button>
             <span
-              className={`verdict-badge ${attempt.verdict === "ACCEPTED" ? "success" : "danger"}`}
+              className={`verdict-badge ${latestAttempt.verdict === "ACCEPTED" ? "success" : "danger"}`}
             >
-              {verdictLabel(attempt, locale)}
+              {groupResultLabel(selectedGroup, locale)}
             </span>
           </div>
         </div>

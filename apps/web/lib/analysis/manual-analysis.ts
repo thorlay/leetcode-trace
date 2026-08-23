@@ -12,6 +12,6 @@ export async function importManualAnalysis(sessionId: string, raw: string) {
   const session = await getSession(sessionId);
   if (!session) throw new Error("Session not found");
   const analysis = manualAIProvider.importResponse(raw);
-  await persistAnalysis(session, analysis, "manual-import", "trajectory-analysis-v2");
+  await persistAnalysis(session, analysis, "manual-import", "trajectory-analysis-v5");
   return analysis;
 }

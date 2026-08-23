@@ -97,6 +97,8 @@ export const demoAnalysis: AnalysisView = {
     { attempt: 4, verdict: "WRONG_ANSWER", issue: "The empty prefix was missing.", fix: "Initialize the frequency map with {0: 1}." },
   ],
   recommendedReviews: [{ conceptKey: "prefix_sum.hashmap", reason: "Practice converting prefix-difference equations into lookup queries." }],
+  masteryEvidence: "INDEPENDENT",
+  nextPractice: { goal: "Re-solve a Prefix Sum + Frequency Map problem without notes.", constraints: ["Do not consult a solution", "State the prefix invariant before coding"], recommendedProblemType: "prefix_sum.frequency_map" },
 };
 
 export const demoSession: SessionView = {

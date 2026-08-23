@@ -38,10 +38,13 @@ ${attempts}
 ## Task
 Keep this practical and concise. The learner-provided labels are facts: if NO_INITIAL_IDEA or SOLUTION_CONSULTED is present, acknowledge it once in a short clause and do not repeatedly reason about whether the learner independently recognized the solution. Do not narrate the learner's psychology or re-litigate those labels.
 
-Focus on three things:
+Treat each numbered section above as one code version. It may contain several Run/Submit events with exactly the same code. Do not repeat an explanation for each event in a group. In trajectory, report only semantic code changes: an algorithm, invariant, state transition, boundary, or language/API change. Do not report formatting, renaming, debug-print removal, or other cosmetic edits.
+
+Focus on four things:
 1. Explain the common solution approach in plain language: the key invariant, why it works, and the reusable pattern. Put this in the single most relevant solutionPatterns item.
-2. For every non-AC SUBMIT, give the concrete code or invariant error and the smallest fix in attemptIssues. Do not turn Run experiments into failures.
+2. For every non-AC SUBMIT, give the concrete code or invariant error and the smallest fix in attemptIssues. Do not turn exploratory Run failures into blockers unless the same defect caused a failed Submit or directly led to a substantive later code change.
 3. Identify one primary learning blocker only when there is evidence. Separate algorithm recognition from implementation mistakes. Never infer a weakness solely because the final code uses an algorithm.
+4. Return masteryEvidence: ASSISTED if the learner marked that they consulted a solution; INDEPENDENT only with direct trace evidence and no assistance marker; otherwise INSUFFICIENT. Return exactly one nextPractice action: a small independent exercise, 1–3 constraints, and a specific reusable recommendedProblemType key.
 
 summary must be at most two short sentences: one sentence for the common approach, and one sentence for the most important submission mistake or next independent re-solve. Avoid restating evidence that appears in attemptIssues.
 
@@ -55,7 +58,7 @@ ${instruction}
 Return ONLY valid JSON. Do not use Markdown fences or add commentary:
 {
   "schemaVersion": "1.0",
-  "promptVersion": "trajectory-analysis-v4",
+  "promptVersion": "trajectory-analysis-v5",
   "summary": "...",
   "primaryBlocker": { "category": "PATTERN_RECOGNITION", "conceptKey": "prefix_sum.hashmap", "conceptLabel": "...", "severity": 0.0, "confidence": 0.0, "evidence": "...", "explanation": "...", "firstEvidenceAttempt": 1, "resolvedAtAttempt": 4 },
   "secondaryBlockers": [{ "category": "COMPLEXITY_OPTIMIZATION", "conceptKey": "prefix_sum.quadratic_to_linear", "conceptLabel": "...", "severity": 0.0, "confidence": 0.0, "evidence": "...", "explanation": "...", "firstEvidenceAttempt": 2, "resolvedAtAttempt": null }],
@@ -63,9 +66,11 @@ Return ONLY valid JSON. Do not use Markdown fences or add commentary:
   "strengths": ["..."],
   "solutionPatterns": [{ "patternKey": "prefix_sum.frequency_map", "patternLabel": "Prefix Sum + Frequency Map", "confidence": 0.0, "evidence": "Maintain a running prefix sum and count prior prefix - k values so each new element contributes matching subarrays in O(1)." }],
   "attemptIssues": [{ "attempt": 1, "verdict": "WRONG_ANSWER", "issue": "...", "fix": "..." }],
-  "recommendedReviews": [{ "conceptKey": "prefix_sum.hashmap", "reason": "..." }]
+  "recommendedReviews": [{ "conceptKey": "prefix_sum.hashmap", "reason": "..." }],
+  "masteryEvidence": "INDEPENDENT",
+  "nextPractice": { "goal": "Re-solve a Prefix Sum + Frequency Map problem from scratch.", "constraints": ["Do not consult a solution", "State the prefix invariant before coding"], "recommendedProblemType": "prefix_sum.frequency_map" }
 }
 
 Allowed categories: PROBLEM_MODELING, PATTERN_RECOGNITION, ALGORITHM_SELECTION, INVARIANT_REASONING, STATE_DESIGN, COMPLEXITY_OPTIMIZATION, IMPLEMENTATION, EDGE_CASES, DEBUGGING, LANGUAGE_KNOWLEDGE.
-All severity and confidence values must be between 0 and 1. solutionPatterns must name only specific algorithms or reusable solution patterns demonstrated by the final code or trajectory, not broad LeetCode topic tags. Return one or two solutionPatterns and no more than five attemptIssues.`;
+All severity and confidence values must be between 0 and 1. solutionPatterns and nextPractice.recommendedProblemType must name only specific algorithms or reusable solution patterns demonstrated by the final code or trajectory, not broad LeetCode topic tags. Return one or two solutionPatterns and no more than five attemptIssues.`;
 }

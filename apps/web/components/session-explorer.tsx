@@ -83,6 +83,13 @@ function groupResultLabel(group: AttemptGroup, locale: "en" | "zh") {
   return [...counts].map(([label, count]) => `${label}${count > 1 ? ` ×${count}` : ""}`).join(" · ");
 }
 
+function masteryLabel(value: AnalysisView["masteryEvidence"], locale: "en" | "zh") {
+  const labels = locale === "zh"
+    ? { INDEPENDENT: "独立完成证据", ASSISTED: "参考后完成", INSUFFICIENT: "掌握证据不足" }
+    : { INDEPENDENT: "Independent evidence", ASSISTED: "Assisted completion", INSUFFICIENT: "Insufficient evidence" };
+  return labels[value ?? "INSUFFICIENT"];
+}
+
 export function SessionExplorer({
   sessionId,
   attempts,
@@ -572,6 +579,20 @@ export function SessionExplorer({
                   </small>
                 )}
               </div>
+              {analysis.nextPractice ? (
+                <div className="solution-patterns next-practice">
+                  <p className="eyebrow">{zh ? "下一步练习" : "NEXT PRACTICE"}</p>
+                  <div>
+                    <b>{analysis.nextPractice.goal}</b>
+                    <span>{masteryLabel(analysis.masteryEvidence, locale)}</span>
+                    <small>
+                      {analysis.nextPractice.constraints.join(" · ")}
+                      <br />
+                      {zh ? "推荐模式：" : "Pattern: "}{analysis.nextPractice.recommendedProblemType}
+                    </small>
+                  </div>
+                </div>
+              ) : null}
               {analysis.solutionPatterns?.length ? (
                 <div className="solution-patterns">
                   <p className="eyebrow">

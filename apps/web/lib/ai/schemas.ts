@@ -32,9 +32,15 @@ const attemptIssueSchema = z.object({
   fix: z.string().min(5),
 });
 
+const nextPracticeSchema = z.object({
+  goal: z.string().min(8),
+  constraints: z.array(z.string().min(3)).min(1).max(3),
+  recommendedProblemType: z.string().regex(/^[a-z0-9_]+\.[a-z0-9_.]+$/),
+});
+
 export const trajectoryAnalysisSchema = z.object({
   schemaVersion: z.literal("1.0"),
-  promptVersion: z.enum(["trajectory-analysis-v2", "trajectory-analysis-v3", "trajectory-analysis-v4"]),
+  promptVersion: z.enum(["trajectory-analysis-v2", "trajectory-analysis-v3", "trajectory-analysis-v4", "trajectory-analysis-v5"]),
   summary: z.string().min(20),
   primaryBlocker: blockerSchema,
   secondaryBlockers: z.array(blockerSchema).max(3),
@@ -43,6 +49,14 @@ export const trajectoryAnalysisSchema = z.object({
   solutionPatterns: z.array(solutionPatternSchema).max(3).default([]),
   attemptIssues: z.array(attemptIssueSchema).max(10).default([]),
   recommendedReviews: z.array(z.object({ conceptKey: z.string(), reason: z.string().min(5) })).max(5),
+  // Defaults keep historical manual AI exports importable. New prompts always require
+  // these fields so the result can directly drive the next review action.
+  masteryEvidence: z.enum(["INDEPENDENT", "ASSISTED", "INSUFFICIENT"]).default("INSUFFICIENT"),
+  nextPractice: nextPracticeSchema.default({
+    goal: "Re-solve the core pattern independently.",
+    constraints: ["Do not consult a solution."],
+    recommendedProblemType: "general.independent_resolve",
+  }),
 });
 
 export type TrajectoryAnalysis = z.infer<typeof trajectoryAnalysisSchema>;

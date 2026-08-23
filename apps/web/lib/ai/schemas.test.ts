@@ -21,6 +21,8 @@ const valid = {
   strengths: ["Implementation converged quickly."],
   solutionPatterns: [{ patternKey: "prefix_sum.frequency_map", patternLabel: "Prefix Sum + Frequency Map", confidence: 0.94, evidence: "The final attempt counts previously seen prefix sums with a frequency map." }],
   recommendedReviews: [{ conceptKey: "prefix_sum.hashmap", reason: "Rehearse the algebra-to-lookup transformation." }],
+  masteryEvidence: "INDEPENDENT",
+  nextPractice: { goal: "Re-solve the prefix-sum pattern independently.", constraints: ["Do not use notes"], recommendedProblemType: "prefix_sum.frequency_map" },
 };
 
 describe("trajectory analysis schema", () => {
@@ -34,5 +36,11 @@ describe("trajectory analysis schema", () => {
 
   it("rejects non-hierarchical concept keys", () => {
     expect(trajectoryAnalysisSchema.safeParse({ ...valid, primaryBlocker: { ...valid.primaryBlocker, conceptKey: "prefix_sum" } }).success).toBe(false);
+  });
+
+  it("keeps older analysis JSON importable with a safe next-practice default", () => {
+    const parsed = trajectoryAnalysisSchema.parse({ ...valid, masteryEvidence: undefined, nextPractice: undefined });
+    expect(parsed.masteryEvidence).toBe("INSUFFICIENT");
+    expect(parsed.nextPractice.recommendedProblemType).toBe("general.independent_resolve");
   });
 });

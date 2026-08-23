@@ -41,6 +41,12 @@ export type AnalysisView = {
   solutionPatterns?: Array<{ patternKey: string; patternLabel: string; confidence: number; evidence: string }>;
   attemptIssues?: Array<{ attempt: number; verdict: string; issue: string; fix: string }>;
   recommendedReviews: Array<{ conceptKey: string; reason: string }>;
+  masteryEvidence?: "INDEPENDENT" | "ASSISTED" | "INSUFFICIENT";
+  nextPractice?: {
+    goal: string;
+    constraints: string[];
+    recommendedProblemType: string;
+  };
 };
 
 export type SessionView = {

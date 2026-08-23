@@ -18,6 +18,9 @@ describe("trajectory prompt completeness", () => {
     expect(prompt).toContain("common solution approach");
     expect(prompt).toContain("every non-AC SUBMIT");
     expect(prompt).toContain("do not repeatedly reason about whether the learner independently recognized");
-    expect(prompt).toContain("trajectory-analysis-v4");
+    expect(prompt).toContain("semantic code changes");
+    expect(prompt).toContain("masteryEvidence");
+    expect(prompt).toContain("nextPractice");
+    expect(prompt).toContain("trajectory-analysis-v5");
   });
 });

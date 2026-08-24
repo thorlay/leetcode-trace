@@ -47,6 +47,13 @@ export type AnalysisView = {
     constraints: string[];
     recommendedProblemType: string;
   };
+  optimalAlternative?: {
+    status: "CURRENT_IS_APPROPRIATE" | "MATERIALLY_BETTER_APPROACH_EXISTS";
+    approach: string;
+    timeComplexity: string;
+    spaceComplexity: string;
+    tradeoff: string;
+  };
 };
 
 export type SessionView = {

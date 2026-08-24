@@ -90,6 +90,13 @@ function masteryLabel(value: AnalysisView["masteryEvidence"], locale: "en" | "zh
   return labels[value ?? "INSUFFICIENT"];
 }
 
+function optimalAlternativeLabel(value: AnalysisView["optimalAlternative"], locale: "en" | "zh") {
+  if (value?.status === "MATERIALLY_BETTER_APPROACH_EXISTS") {
+    return locale === "zh" ? "存在更优方案" : "Better approach available";
+  }
+  return locale === "zh" ? "当前解法已合适" : "Current approach is appropriate";
+}
+
 export function SessionExplorer({
   sessionId,
   attempts,
@@ -589,6 +596,20 @@ export function SessionExplorer({
                       {analysis.nextPractice.constraints.join(" · ")}
                       <br />
                       {zh ? "推荐模式：" : "Pattern: "}{analysis.nextPractice.recommendedProblemType}
+                    </small>
+                  </div>
+                </div>
+              ) : null}
+              {analysis.optimalAlternative ? (
+                <div className="solution-patterns optimal-alternative">
+                  <p className="eyebrow">{zh ? "最优方案判断" : "OPTIMAL APPROACH CHECK"}</p>
+                  <div>
+                    <b>{optimalAlternativeLabel(analysis.optimalAlternative, locale)}</b>
+                    <span>{analysis.optimalAlternative.timeComplexity} · {analysis.optimalAlternative.spaceComplexity}</span>
+                    <small>
+                      {analysis.optimalAlternative.approach}
+                      <br />
+                      {zh ? "取舍：" : "Tradeoff: "}{analysis.optimalAlternative.tradeoff}
                     </small>
                   </div>
                 </div>

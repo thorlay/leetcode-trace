@@ -23,6 +23,7 @@ const valid = {
   recommendedReviews: [{ conceptKey: "prefix_sum.hashmap", reason: "Rehearse the algebra-to-lookup transformation." }],
   masteryEvidence: "INDEPENDENT",
   nextPractice: { goal: "Re-solve the prefix-sum pattern independently.", constraints: ["Do not use notes"], recommendedProblemType: "prefix_sum.frequency_map" },
+  optimalAlternative: { status: "CURRENT_IS_APPROPRIATE", approach: "The prefix-sum frequency map is already the appropriate approach.", timeComplexity: "O(n)", spaceComplexity: "O(n)", tradeoff: "No asymptotic improvement is known for arbitrary integers." },
 };
 
 describe("trajectory analysis schema", () => {
@@ -39,8 +40,9 @@ describe("trajectory analysis schema", () => {
   });
 
   it("keeps older analysis JSON importable with a safe next-practice default", () => {
-    const parsed = trajectoryAnalysisSchema.parse({ ...valid, masteryEvidence: undefined, nextPractice: undefined });
+    const parsed = trajectoryAnalysisSchema.parse({ ...valid, masteryEvidence: undefined, nextPractice: undefined, optimalAlternative: undefined });
     expect(parsed.masteryEvidence).toBe("INSUFFICIENT");
     expect(parsed.nextPractice.recommendedProblemType).toBe("general.independent_resolve");
+    expect(parsed.optimalAlternative.status).toBe("CURRENT_IS_APPROPRIATE");
   });
 });

@@ -22,5 +22,6 @@ export function localizeAnalysisToChinese(analysis: AnalysisView | null): Analys
     strengths: ["频次表思路出现后，只剩下一个局部边界问题需要修正。"],
     recommendedReviews: analysis.recommendedReviews.map((review) => ({ ...review, reason: "练习把前缀差等式转换为哈希表查找。" })),
     nextPractice: analysis.nextPractice ? { ...analysis.nextPractice, goal: "不看笔记，独立重做一道前缀和 + 频次表题。", constraints: ["不看题解", "编码前先写出前缀和不变量"] } : undefined,
+    optimalAlternative: analysis.optimalAlternative ? { ...analysis.optimalAlternative, approach: "最终的前缀和 + 频次表已经是适合本题的线性解法。", tradeoff: "对任意整数数组，没有已知的渐进复杂度更优通用方案。" } : undefined,
   };
 }

@@ -12,6 +12,6 @@ export const openAIProvider: AutomaticTrajectoryProvider = {
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const response = await client.responses.parse({ model, input: [{ role: "system", content: "You are a precise learning-trajectory analyst. Return only the requested structured result." }, { role: "user", content: buildTrajectoryPrompt(session, locale) }], text: { format: zodTextFormat(trajectoryAnalysisSchema, "trajectory_analysis") } });
     if (!response.output_parsed) throw new Error("The model returned no structured trajectory analysis");
-    return { analysis: trajectoryAnalysisSchema.parse(response.output_parsed), model, promptVersion: "trajectory-analysis-v5" };
+    return { analysis: trajectoryAnalysisSchema.parse(response.output_parsed), model, promptVersion: "trajectory-analysis-v6" };
   },
 };

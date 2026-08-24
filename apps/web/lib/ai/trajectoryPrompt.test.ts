@@ -21,6 +21,7 @@ describe("trajectory prompt completeness", () => {
     expect(prompt).toContain("semantic code changes");
     expect(prompt).toContain("masteryEvidence");
     expect(prompt).toContain("nextPractice");
-    expect(prompt).toContain("trajectory-analysis-v5");
+    expect(prompt).toContain("optimalAlternative");
+    expect(prompt).toContain("trajectory-analysis-v6");
   });
 });

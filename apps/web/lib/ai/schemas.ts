@@ -38,9 +38,17 @@ const nextPracticeSchema = z.object({
   recommendedProblemType: z.string().regex(/^[a-z0-9_]+\.[a-z0-9_.]+$/),
 });
 
+const optimalAlternativeSchema = z.object({
+  status: z.enum(["CURRENT_IS_APPROPRIATE", "MATERIALLY_BETTER_APPROACH_EXISTS"]),
+  approach: z.string().min(8),
+  timeComplexity: z.string().min(2),
+  spaceComplexity: z.string().min(2),
+  tradeoff: z.string().min(8),
+});
+
 export const trajectoryAnalysisSchema = z.object({
   schemaVersion: z.literal("1.0"),
-  promptVersion: z.enum(["trajectory-analysis-v2", "trajectory-analysis-v3", "trajectory-analysis-v4", "trajectory-analysis-v5"]),
+  promptVersion: z.enum(["trajectory-analysis-v2", "trajectory-analysis-v3", "trajectory-analysis-v4", "trajectory-analysis-v5", "trajectory-analysis-v6"]),
   summary: z.string().min(20),
   primaryBlocker: blockerSchema,
   secondaryBlockers: z.array(blockerSchema).max(3),
@@ -56,6 +64,13 @@ export const trajectoryAnalysisSchema = z.object({
     goal: "Re-solve the core pattern independently.",
     constraints: ["Do not consult a solution."],
     recommendedProblemType: "general.independent_resolve",
+  }),
+  optimalAlternative: optimalAlternativeSchema.default({
+    status: "CURRENT_IS_APPROPRIATE",
+    approach: "No material improvement was established from the captured code.",
+    timeComplexity: "N/A",
+    spaceComplexity: "N/A",
+    tradeoff: "The historical analysis did not include a verified alternative.",
   }),
 });
 

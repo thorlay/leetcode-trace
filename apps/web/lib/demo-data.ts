@@ -99,6 +99,7 @@ export const demoAnalysis: AnalysisView = {
   recommendedReviews: [{ conceptKey: "prefix_sum.hashmap", reason: "Practice converting prefix-difference equations into lookup queries." }],
   masteryEvidence: "INDEPENDENT",
   nextPractice: { goal: "Re-solve a Prefix Sum + Frequency Map problem without notes.", constraints: ["Do not consult a solution", "State the prefix invariant before coding"], recommendedProblemType: "prefix_sum.frequency_map" },
+  optimalAlternative: { status: "CURRENT_IS_APPROPRIATE", approach: "The final prefix-sum frequency map is the appropriate linear-time approach.", timeComplexity: "O(n)", spaceComplexity: "O(n)", tradeoff: "No asymptotically better general solution is established for arbitrary integers." },
 };
 
 export const demoSession: SessionView = {

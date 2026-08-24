@@ -85,14 +85,14 @@ function groupResultLabel(group: AttemptGroup, locale: "en" | "zh") {
 
 function masteryLabel(value: AnalysisView["masteryEvidence"], locale: "en" | "zh") {
   const labels = locale === "zh"
-    ? { INDEPENDENT: "独立完成证据", ASSISTED: "参考后完成", INSUFFICIENT: "掌握证据不足" }
-    : { INDEPENDENT: "Independent evidence", ASSISTED: "Assisted completion", INSUFFICIENT: "Insufficient evidence" };
+    ? { INDEPENDENT: "记录推断：独立完成", ASSISTED: "参考后完成", INSUFFICIENT: "独立完成证据不足" }
+    : { INDEPENDENT: "Trace suggests independent", ASSISTED: "Assisted completion", INSUFFICIENT: "Independent evidence insufficient" };
   return labels[value ?? "INSUFFICIENT"];
 }
 
 function optimalAlternativeLabel(value: AnalysisView["optimalAlternative"], locale: "en" | "zh") {
   if (value?.status === "MATERIALLY_BETTER_APPROACH_EXISTS") {
-    return locale === "zh" ? "存在更优方案" : "Better approach available";
+    return locale === "zh" ? "可选优化方案" : "Optional optimization";
   }
   return locale === "zh" ? "当前解法已合适" : "Current approach is appropriate";
 }
@@ -147,6 +147,7 @@ export function SessionExplorer({
     [attempt, previous],
   );
   const zh = locale === "zh";
+  const insufficientEvidence = analysis?.primaryBlocker.conceptKey === "insufficient_evidence.no_actionable_blocker";
   const categoryLabel = (value: string) =>
     zh ? (zhCategories[value] ?? value) : titleCase(value);
 
@@ -543,16 +544,16 @@ export function SessionExplorer({
           <div className="analysis-grid">
             <article className="primary-analysis">
               <div className="analysis-label">
-                <span>{zh ? "主要卡点" : "Primary blocker"}</span>
-                <b>
+                <span>{insufficientEvidence ? (zh ? "本次结论" : "SESSION CONCLUSION") : (zh ? "主要卡点" : "Primary blocker")}</span>
+                {!insufficientEvidence && <b>
                   {Math.round(analysis.primaryBlocker.confidence * 100)}%{" "}
                   {zh ? "置信度" : "confidence"}
-                </b>
+                </b>}
               </div>
               <p className="category">
-                {categoryLabel(analysis.primaryBlocker.category)}
+                {insufficientEvidence ? (zh ? "轨迹证据" : "TRAJECTORY EVIDENCE") : categoryLabel(analysis.primaryBlocker.category)}
               </p>
-              <h3>{analysis.primaryBlocker.conceptLabel}</h3>
+              <h3>{insufficientEvidence ? (zh ? "本次没有明确的学习卡点" : "No specific learning blocker in this session") : analysis.primaryBlocker.conceptLabel}</h3>
               <p className="analysis-summary">{analysis.summary}</p>
               <blockquote>{analysis.primaryBlocker.evidence}</blockquote>
               <div className="analysis-actions">
@@ -603,14 +604,14 @@ export function SessionExplorer({
               {analysis.optimalAlternative ? (
                 <div className="solution-patterns optimal-alternative">
                   <p className="eyebrow">{zh ? "最优方案判断" : "OPTIMAL APPROACH CHECK"}</p>
-                  <div>
+                  <div className="optimal-summary">
                     <b>{optimalAlternativeLabel(analysis.optimalAlternative, locale)}</b>
-                    <span>{analysis.optimalAlternative.timeComplexity} · {analysis.optimalAlternative.spaceComplexity}</span>
-                    <small>
-                      {analysis.optimalAlternative.approach}
-                      <br />
-                      {zh ? "取舍：" : "Tradeoff: "}{analysis.optimalAlternative.tradeoff}
-                    </small>
+                    <small>{analysis.optimalAlternative.approach}</small>
+                    <div className="complexity-grid">
+                      <span><i>{zh ? "时间" : "Time"}</i>{analysis.optimalAlternative.timeComplexity}</span>
+                      <span><i>{zh ? "空间" : "Space"}</i>{analysis.optimalAlternative.spaceComplexity}</span>
+                    </div>
+                    <small>{zh ? "取舍：" : "Tradeoff: "}{analysis.optimalAlternative.tradeoff}</small>
                   </div>
                 </div>
               ) : null}
@@ -649,7 +650,7 @@ export function SessionExplorer({
               ) : null}
             </article>
             <aside className="secondary-analysis">
-              <p className="eyebrow">{zh ? "次要问题" : "SECONDARY ISSUE"}</p>
+              {analysis.secondaryBlockers.length ? <p className="eyebrow">{zh ? "次要问题" : "SECONDARY ISSUE"}</p> : null}
               {analysis.secondaryBlockers.map((blocker) => (
                 <div key={blocker.conceptKey}>
                   <p className="category">{categoryLabel(blocker.category)}</p>

@@ -22,6 +22,7 @@ describe("trajectory prompt completeness", () => {
     expect(prompt).toContain("masteryEvidence");
     expect(prompt).toContain("nextPractice");
     expect(prompt).toContain("optimalAlternative");
-    expect(prompt).toContain("trajectory-analysis-v6");
+    expect(prompt).toContain("one-shot AC or an imported final submission is NOT evidence");
+    expect(prompt).toContain("trajectory-analysis-v7");
   });
 });

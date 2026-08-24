@@ -44,8 +44,8 @@ Focus on five things:
 1. Explain the common solution approach in plain language: the key invariant, why it works, and the reusable pattern. Put this in the single most relevant solutionPatterns item.
 2. For every non-AC SUBMIT, give the concrete code or invariant error and the smallest fix in attemptIssues. Do not turn exploratory Run failures into blockers unless the same defect caused a failed Submit or directly led to a substantive later code change.
 3. Identify one primary learning blocker only when there is evidence. Separate algorithm recognition from implementation mistakes. Never infer a weakness solely because the final code uses an algorithm.
-4. Return masteryEvidence: ASSISTED if the learner marked that they consulted a solution; INDEPENDENT only with direct trace evidence and no assistance marker; otherwise INSUFFICIENT. Return exactly one nextPractice action: a small independent exercise, 1–3 constraints, and a specific reusable recommendedProblemType key.
-5. Evaluate the final submitted code against the problem statement and return optimalAlternative. Use CURRENT_IS_APPROPRIATE when no material, verifiable time/space/complexity improvement is available; do not invent a cleverer alternative. Use MATERIALLY_BETTER_APPROACH_EXISTS only when you can name the better approach, both complexities, and its tradeoff. Never invent missing constraints; when constraints are absent, say the comparison is asymptotic in tradeoff.
+4. Return masteryEvidence: ASSISTED if the learner marked that they consulted a solution. A one-shot AC or an imported final submission is NOT evidence of independent solving. Return INDEPENDENT only when the record contains an explicit learner-provided initial marker plus an unassisted, substantive solving trajectory; otherwise return INSUFFICIENT. Return exactly one nextPractice action: a small independent exercise, 1–3 constraints, and a specific reusable recommendedProblemType key.
+5. Evaluate the final submitted code against the problem statement and return optimalAlternative. Use CURRENT_IS_APPROPRIATE when no material, verifiable time/space/complexity improvement is available; do not invent a cleverer alternative. Use MATERIALLY_BETTER_APPROACH_EXISTS only when you can name the better approach, both complexities, and its tradeoff. A space-only improvement is optional optimization, not evidence that the current accepted solution is wrong. For a better approach, format timeComplexity and spaceComplexity as "Current O(...) → proposed O(...)". Never invent missing constraints; when constraints are absent, say the comparison is asymptotic in tradeoff.
 
 summary must be at most two short sentences: one sentence for the common approach, and one sentence for the most important submission mistake or next independent re-solve. Avoid restating evidence that appears in attemptIssues.
 
@@ -59,7 +59,7 @@ ${instruction}
 Return ONLY valid JSON. Do not use Markdown fences or add commentary:
 {
   "schemaVersion": "1.0",
-  "promptVersion": "trajectory-analysis-v6",
+  "promptVersion": "trajectory-analysis-v7",
   "summary": "...",
   "primaryBlocker": { "category": "PATTERN_RECOGNITION", "conceptKey": "prefix_sum.hashmap", "conceptLabel": "...", "severity": 0.0, "confidence": 0.0, "evidence": "...", "explanation": "...", "firstEvidenceAttempt": 1, "resolvedAtAttempt": 4 },
   "secondaryBlockers": [{ "category": "COMPLEXITY_OPTIMIZATION", "conceptKey": "prefix_sum.quadratic_to_linear", "conceptLabel": "...", "severity": 0.0, "confidence": 0.0, "evidence": "...", "explanation": "...", "firstEvidenceAttempt": 2, "resolvedAtAttempt": null }],

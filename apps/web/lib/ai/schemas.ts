@@ -48,7 +48,7 @@ const optimalAlternativeSchema = z.object({
 
 export const trajectoryAnalysisSchema = z.object({
   schemaVersion: z.literal("1.0"),
-  promptVersion: z.enum(["trajectory-analysis-v2", "trajectory-analysis-v3", "trajectory-analysis-v4", "trajectory-analysis-v5", "trajectory-analysis-v6", "trajectory-analysis-v7"]),
+  promptVersion: z.enum(["trajectory-analysis-v2", "trajectory-analysis-v3", "trajectory-analysis-v4", "trajectory-analysis-v5", "trajectory-analysis-v6", "trajectory-analysis-v7", "trajectory-analysis-v8"]),
   summary: z.string().min(20),
   primaryBlocker: blockerSchema,
   secondaryBlockers: z.array(blockerSchema).max(3),

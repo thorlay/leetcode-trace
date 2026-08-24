@@ -23,6 +23,7 @@ describe("trajectory prompt completeness", () => {
     expect(prompt).toContain("nextPractice");
     expect(prompt).toContain("optimalAlternative");
     expect(prompt).toContain("one-shot AC or an imported final submission is NOT evidence");
-    expect(prompt).toContain("trajectory-analysis-v7");
+    expect(prompt).toContain("Never call a literal code predicate or a final accepted line a strength");
+    expect(prompt).toContain("trajectory-analysis-v8");
   });
 });

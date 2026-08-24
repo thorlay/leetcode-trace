@@ -97,6 +97,10 @@ function optimalAlternativeLabel(value: AnalysisView["optimalAlternative"], loca
   return locale === "zh" ? "当前解法已合适" : "Current approach is appropriate";
 }
 
+function usefulStrength(value: string) {
+  return !/(正确使用|correctly use[sd]?|正确地使用|只有当前元素|only (when|if) the current)/i.test(value);
+}
+
 export function SessionExplorer({
   sessionId,
   attempts,
@@ -148,6 +152,7 @@ export function SessionExplorer({
   );
   const zh = locale === "zh";
   const insufficientEvidence = analysis?.primaryBlocker.conceptKey === "insufficient_evidence.no_actionable_blocker";
+  const strength = analysis?.strengths.find(usefulStrength);
   const categoryLabel = (value: string) =>
     zh ? (zhCategories[value] ?? value) : titleCase(value);
 
@@ -658,13 +663,13 @@ export function SessionExplorer({
                   <p>{blocker.evidence}</p>
                 </div>
               ))}
-              <div className="strength">
+              {strength ? <div className="strength">
                 <span>↗</span>
                 <div>
-                  <b>{zh ? "发现的优势" : "Strength spotted"}</b>
-                  <p>{analysis.strengths[0]}</p>
+                  <b>{zh ? "可迁移的优势" : "Transferable strength"}</b>
+                  <p>{strength}</p>
                 </div>
-              </div>
+              </div> : null}
             </aside>
           </div>
         ) : (

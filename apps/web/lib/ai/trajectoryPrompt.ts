@@ -49,6 +49,9 @@ Focus on five things:
 
 summary must be at most two short sentences: one sentence for the common approach, and one sentence for the most important submission mistake or next independent re-solve. Avoid restating evidence that appears in attemptIssues.
 
+## Strength rule
+strengths is optional: return an empty array unless the trace shows a concrete, transferable learning behavior, such as independently moving from a failed model to the correct pattern, applying the same invariant correctly in multiple materially different versions, or validating a boundary case after identifying it. Never call a literal code predicate or a final accepted line a strength (for example, "correctly used stack[-1] > nums[i]").
+
 ## Weakness aggregation rules
 category is only a broad reporting bucket. A conceptKey must name one concrete, reusable faulty decision from the observed code, such as monotonic_stack.pop_until_invariant, prefix_sum.query_before_update, backtracking.restore_state, trie.prefix_vs_substring, or dp.reachability_window.
 
@@ -59,7 +62,7 @@ ${instruction}
 Return ONLY valid JSON. Do not use Markdown fences or add commentary:
 {
   "schemaVersion": "1.0",
-  "promptVersion": "trajectory-analysis-v7",
+  "promptVersion": "trajectory-analysis-v8",
   "summary": "...",
   "primaryBlocker": { "category": "PATTERN_RECOGNITION", "conceptKey": "prefix_sum.hashmap", "conceptLabel": "...", "severity": 0.0, "confidence": 0.0, "evidence": "...", "explanation": "...", "firstEvidenceAttempt": 1, "resolvedAtAttempt": 4 },
   "secondaryBlockers": [{ "category": "COMPLEXITY_OPTIMIZATION", "conceptKey": "prefix_sum.quadratic_to_linear", "conceptLabel": "...", "severity": 0.0, "confidence": 0.0, "evidence": "...", "explanation": "...", "firstEvidenceAttempt": 2, "resolvedAtAttempt": null }],

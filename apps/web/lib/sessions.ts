@@ -57,7 +57,9 @@ export async function getRecentSessions(): Promise<SessionView[]> {
 export async function getHistorySessions(): Promise<SessionView[]> {
   try {
     const rows = await prisma.problemSession.findMany({
-      take: 200,
+      // A personal history import can easily exceed 200 reconstructed sessions. Keep
+      // the history view complete rather than silently making the summary look capped.
+      take: 1_000,
       orderBy: { startedAt: "desc" },
       select: { id: true },
     });

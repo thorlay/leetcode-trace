@@ -15,14 +15,18 @@ export async function reconcileProblemSessions(problemSlug: string) {
   });
   const attempts = sessions.flatMap((session) => session.attempts.map((attempt) => ({ id: attempt.id, sessionId: attempt.sessionId, problemId: session.problemId, createdAt: attempt.createdAt, verdict: attempt.verdict })));
   const groups = groupHistoricalAttempts(attempts);
-  if (!groups.some((group) => new Set(group.map((attempt) => attempt.sessionId)).size > 1)) return;
+  if (!groups.some((group) => new Set(group.map((attempt) => attempt.sessionId)).size > 1)) return { mergedGroups: 0, removedSessions: 0 };
 
+  let mergedGroups = 0;
+  let removedSessions = 0;
   await prisma.$transaction(async (tx) => {
     let merged = false;
     for (const group of groups) {
       const sourceIds = [...new Set(group.map((attempt) => attempt.sessionId))];
       if (sourceIds.length < 2) continue;
       merged = true;
+      mergedGroups += 1;
+      removedSessions += sourceIds.length - 1;
       const targetSessionId = group[0].sessionId;
       const sourceSessions = sessions.filter((session) => sourceIds.includes(session.id));
       const accepted = group.some((attempt) => attempt.verdict === "ACCEPTED");
@@ -56,4 +60,19 @@ export async function reconcileProblemSessions(problemSlug: string) {
     }
     if (merged) await rebuildWeaknessAggregates(tx);
   });
+  return { mergedGroups, removedSessions };
+}
+
+/** Apply the same adjacent-attempt rule to records that existed before live capture
+ * started returning a canonical server-side session id. */
+export async function reconcileAllProblemSessions() {
+  const problems = await prisma.problem.findMany({ select: { slug: true } });
+  let mergedGroups = 0;
+  let removedSessions = 0;
+  for (const problem of problems) {
+    const result = await reconcileProblemSessions(problem.slug);
+    mergedGroups += result.mergedGroups;
+    removedSessions += result.removedSessions;
+  }
+  return { mergedGroups, removedSessions };
 }

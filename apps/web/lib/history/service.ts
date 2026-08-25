@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { prisma } from "../prisma";
 import type { HistoricalSubmission, ProblemMetadata } from "./schema";
 import { groupHistoricalAttempts } from "./reconstruct";
+import { reconcileAllProblemSessions } from "./reconcile-sessions";
 
 export async function importHistoricalSubmissions(submissions: HistoricalSubmission[]) {
   let imported = 0; let duplicates = 0;
@@ -42,7 +43,8 @@ export async function finalizeHistoricalImport() {
       if (obsolete.length) await tx.problemSession.deleteMany({ where: { id: { in: obsolete } } });
     }
   });
-  return { problems: new Set(attempts.map((attempt) => attempt.problemId)).size, submissions: attempts.length, sessions: groups.length, analyzableSessions: groups.filter((group) => group.length >= 2).length };
+  const reconciliation = await reconcileAllProblemSessions();
+  return { problems: new Set(attempts.map((attempt) => attempt.problemId)).size, submissions: attempts.length, sessions: groups.length, analyzableSessions: groups.filter((group) => group.length >= 2).length, ...reconciliation };
 }
 
 export async function localProblemSlugs() {

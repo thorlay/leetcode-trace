@@ -22,7 +22,7 @@ let historyImported = 0;
 let historyDuplicates = 0;
 const snapshotRequests = new Map<string, (snapshot: PageSnapshot) => void>();
 const problemInfoRequests = new Map<string, (problem: ProblemInfo) => void>();
-const currentSubmissionRequests = new Map<string, (submission: CurrentSubmission) => void>();
+const currentSubmissionRequests = new Map<string, { resolve: (submission: CurrentSubmission) => void; reject: (error: Error) => void }>();
 
 function injectPageAdapter() {
   const script = document.createElement("script");
@@ -153,9 +153,9 @@ function requestProblemInfo(): Promise<ProblemInfo> {
 function requestCurrentSubmission(): Promise<CurrentSubmission> {
   const requestId = crypto.randomUUID();
   return new Promise((resolve, reject) => {
-    currentSubmissionRequests.set(requestId, resolve);
+    currentSubmissionRequests.set(requestId, { resolve, reject });
     window.postMessage({ source: "REVIEWLY_CONTENT", kind: "REQUEST_CURRENT_SUBMISSION", requestId }, location.origin);
-    window.setTimeout(() => { if (currentSubmissionRequests.delete(requestId)) reject(new Error("No completed result is visible yet")); }, 4_000);
+    window.setTimeout(() => { if (currentSubmissionRequests.delete(requestId)) reject(new Error("Could not read a recent submission for this problem")); }, 15_000);
   });
 }
 
@@ -190,7 +190,7 @@ window.addEventListener("message", (event: MessageEvent<PageEvent>) => {
     snapshotRequests.get(event.data.requestId)?.(event.data.snapshot);
     snapshotRequests.delete(event.data.requestId);
   } else if (event.data.kind === "CURRENT_SUBMISSION") {
-    currentSubmissionRequests.get(event.data.requestId)?.({ snapshot: event.data.snapshot, verdict: event.data.verdict });
+    currentSubmissionRequests.get(event.data.requestId)?.resolve({ snapshot: event.data.snapshot, verdict: event.data.verdict });
     currentSubmissionRequests.delete(event.data.requestId);
   } else if (event.data.kind === "PROBLEM_INFO") {
     problemInfoRequests.get(event.data.requestId)?.(event.data.problem);
@@ -216,7 +216,11 @@ window.addEventListener("message", (event: MessageEvent<PageEvent>) => {
       const skippedNote = skippedInvalidTimestamp ? ` Skipped ${skippedInvalidTimestamp} records with no valid submission time.` : "";
       await setStatus(`Import complete: ${response.data.problems} problems, ${response.data.submissions} submissions, ${response.data.analyzableSessions} analyzable sessions.${skippedNote}`, "success");
     }).catch(async (error) => { historyRunning = false; await setStatus(error instanceof Error ? error.message : "History import failed", "error"); });
-  } else if (event.data.kind === "ERROR") { historyRunning = false; void setStatus(event.data.message, "error"); }
+  } else if (event.data.kind === "ERROR") {
+    const currentRequest = event.data.requestId ? currentSubmissionRequests.get(event.data.requestId) : undefined;
+    if (currentRequest) { currentSubmissionRequests.delete(event.data.requestId!); currentRequest.reject(new Error(event.data.message)); return; }
+    historyRunning = false; void setStatus(event.data.message, "error");
+  }
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {

@@ -118,6 +118,43 @@ async function fetchSubmissionDetails(ids: string[]) {
   return details;
 }
 
+async function fetchLatestSubmissionForProblem(slug: string): Promise<HistoricalSubmissionPayload | null> {
+  if (!slug) return null;
+  let offset = 0;
+  let lastKey = "";
+  // The endpoint is account-wide. Check a bounded recent window so this button stays
+  // immediate while still working when the user solved another problem more recently.
+  for (let page = 0; page < 10; page += 1) {
+    const rawBody = await fetchHistoryPage(`/api/submissions/?offset=${offset}&limit=20&lastkey=${encodeURIComponent(lastKey)}`);
+    let body: { submissions_dump?: Array<Record<string, unknown>>; has_next?: boolean; last_key?: string };
+    try { body = JSON.parse(rawBody) as typeof body; }
+    catch { throw new Error("LeetCode returned a sign-in or verification page instead of submission history. Refresh the tab, complete any verification, then try again."); }
+    const rows = body.submissions_dump ?? [];
+    const row = rows.find((candidate) => String(candidate.title_slug ?? candidate.titleSlug ?? "") === slug);
+    if (row) {
+      const id = String(row.id ?? row.submission_id ?? "");
+      const submittedAt = submissionTimestampToIso(row);
+      if (!id || !submittedAt) return null;
+      const detail = (await fetchSubmissionDetails([id])).get(id);
+      return {
+        submissionId: id,
+        problemSlug: slug,
+        problemTitle: String(row.title ?? row.question_title ?? slug),
+        submittedAt,
+        language: String(row.lang ?? row.lang_name ?? "unknown"),
+        verdict: normalizeVerdict(String(row.status_display ?? row.status ?? "Unknown")),
+        code: typeof row.code === "string" ? row.code : detail?.code ?? "",
+        runtime: row.runtime ? String(row.runtime) : detail?.runtime,
+        memory: row.memory ? String(row.memory) : detail?.memory,
+      };
+    }
+    if (!body.has_next || rows.length === 0) return null;
+    offset += rows.length;
+    lastKey = body.last_key ?? lastKey;
+  }
+  return null;
+}
+
 export const leetcodeAdapter = {
   getProblemSlug() {
     return location.pathname.match(/^\/problems\/([^/]+)/)?.[1] ?? "";
@@ -160,6 +197,7 @@ export const leetcodeAdapter = {
     return { problemSlug: this.getProblemSlug(), problemTitle: this.getProblemTitle(), problemStatement: this.getProblemStatement(), code: this.getCode(), language: this.getLanguage() };
   },
   visibleVerdict,
+  fetchLatestSubmissionForProblem,
   problemInfo(): ProblemInfo { return { problemSlug: this.getProblemSlug(), problemTitle: this.getProblemTitle(), problemStatement: this.getProblemStatement() }; },
   observeRun(callback: () => void) {
     const listener = (event: Event) => {

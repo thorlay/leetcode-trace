@@ -31,7 +31,7 @@ export type PageEvent =
   | { source: "REVIEWLY_PAGE"; kind: "PROBLEM_METADATA"; metadata: ProblemMetadataPayload }
   | { source: "REVIEWLY_PAGE"; kind: "HISTORY_PAGE"; submissions: HistoricalSubmissionPayload[]; fetched: number }
   | { source: "REVIEWLY_PAGE"; kind: "HISTORY_DONE"; fetched: number; skippedInvalidTimestamp: number }
-  | { source: "REVIEWLY_PAGE"; kind: "ERROR"; message: string };
+  | { source: "REVIEWLY_PAGE"; kind: "ERROR"; message: string; requestId?: string };
 
 export type ApiRequest = { type: "API_REQUEST"; path: string; method: "POST" | "PATCH" | "DELETE"; body?: unknown };
 export type SessionTrackingMessage = { type: "TRACK_SESSION"; sessionId: string } | { type: "UNTRACK_SESSION" };

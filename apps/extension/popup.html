@@ -26,6 +26,7 @@
     <header><div class="mark">R</div><div><h1>Reviewly Capture</h1><p>Local LeetCode learning recorder</p></div></header>
     <div class="toggle-row"><div><strong>Automatic capture</strong><span>Run and Submit buttons</span></div><label class="switch"><input id="enabled" type="checkbox" /><i class="slider"></i></label></div>
     <button id="capture">Capture snapshot</button>
+    <button id="import-current-submission" class="secondary">Import current submission result</button>
     <section class="stuck-card"><strong>标记学习过程 · Learning marker</strong><span>记录一开始的卡点，或在参考题解后标记答案来源。</span><select id="self-assessment"><option value="NO_INITIAL_IDEA">完全没思路 · No initial idea</option><option value="ALGORITHM_SELECTION">有方向但选不出算法 · Cannot choose algorithm</option><option value="IMPLEMENTATION_STUCK">知道算法但实现卡住 · Stuck implementing</option><option value="SOLUTION_CONSULTED">看了答案 / 题解后完成 · Used solution</option></select><textarea id="stuck-note" maxlength="2000" placeholder="可选备注：例如看了哪部分题解？"></textarea><button id="mark-stuck">保存标记 · Save marker</button></section>
     <button id="import-history" class="secondary">Import LeetCode history</button>
     <p id="status" class="status">Open a LeetCode problem to capture code.</p>

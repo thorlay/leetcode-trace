@@ -20,6 +20,12 @@ function normalizeVerdict(value: string): AttemptVerdict {
   return verdicts.find(([label]) => value.includes(label))?.[1] ?? "UNKNOWN";
 }
 
+function visibleVerdict() {
+  const selectedText = selectors.result.map((selector) => document.querySelector<HTMLElement>(selector)?.innerText ?? "").join("\n");
+  const resultText = selectedText || document.body?.innerText || "";
+  return verdicts.find(([label]) => resultText.includes(label))?.[1] ?? null;
+}
+
 function firstText(candidates: readonly string[]) {
   for (const selector of candidates) {
     const value = document.querySelector<HTMLElement>(selector)?.innerText?.trim();
@@ -153,6 +159,7 @@ export const leetcodeAdapter = {
   snapshot(): PageSnapshot {
     return { problemSlug: this.getProblemSlug(), problemTitle: this.getProblemTitle(), problemStatement: this.getProblemStatement(), code: this.getCode(), language: this.getLanguage() };
   },
+  visibleVerdict,
   problemInfo(): ProblemInfo { return { problemSlug: this.getProblemSlug(), problemTitle: this.getProblemTitle(), problemStatement: this.getProblemStatement() }; },
   observeRun(callback: () => void) {
     const listener = (event: Event) => {
@@ -170,15 +177,10 @@ export const leetcodeAdapter = {
   },
   observeVerdict(callback: (verdict: AttemptVerdict) => void) {
     let lastVerdict = "";
-    const currentVerdict = () => {
-      const selectedText = selectors.result.map((selector) => document.querySelector<HTMLElement>(selector)?.innerText ?? "").join("\n");
-      const resultText = selectedText || document.body?.innerText || "";
-      return verdicts.find(([label]) => resultText.includes(label))?.[1] ?? "";
-    };
     const detect = () => {
       // LeetCode frequently changes the result panel's generated classes. Prefer known
       // containers, then fall back to visible document text after a result-panel mutation.
-      const verdict = currentVerdict();
+      const verdict = visibleVerdict();
       // A result panel normally clears or enters a judging state before the next result.
       // Remember that transition so a second identical verdict (for example Accepted →
       // Accepted) is still captured, while an old result visible at click time is not.
@@ -187,7 +189,7 @@ export const leetcodeAdapter = {
     };
     const observer = new MutationObserver(detect);
     observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true });
-    return { disconnect: () => observer.disconnect(), reset: () => { lastVerdict = currentVerdict(); } };
+    return { disconnect: () => observer.disconnect(), reset: () => { lastVerdict = visibleVerdict() ?? ""; } };
   },
   async fetchSubmissionHistory(onPage: (submissions: HistoricalSubmissionPayload[], fetched: number) => void) {
     let offset = 0; let lastKey = ""; let fetched = 0; let skippedInvalidTimestamp = 0;

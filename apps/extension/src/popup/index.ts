@@ -1,5 +1,6 @@
 const enabledInput = document.querySelector<HTMLInputElement>("#enabled")!;
 const captureButton = document.querySelector<HTMLButtonElement>("#capture")!;
+const importCurrentButton = document.querySelector<HTMLButtonElement>("#import-current-submission")!;
 const statusElement = document.querySelector<HTMLElement>("#status")!;
 const importButton = document.querySelector<HTMLButtonElement>("#import-history")!;
 const stuckButton = document.querySelector<HTMLButtonElement>("#mark-stuck")!;
@@ -21,6 +22,7 @@ async function renderStatus() {
   enabledInput.checked = stored.enabled !== false;
   const tab = await activeLeetCodeTab();
   captureButton.disabled = !tab || !enabledInput.checked;
+  importCurrentButton.disabled = !tab || !enabledInput.checked;
   stuckButton.disabled = !tab || !enabledInput.checked;
   importButton.disabled = !(await activeLeetCodeSiteTab());
   if (stored.lastCaptureStatus?.message) statusElement.textContent = stored.lastCaptureStatus.message;
@@ -31,6 +33,7 @@ async function renderStatus() {
 enabledInput.addEventListener("change", async () => {
   await chrome.storage.local.set({ enabled: enabledInput.checked });
   captureButton.disabled = !enabledInput.checked || !(await activeLeetCodeTab());
+  importCurrentButton.disabled = !enabledInput.checked || !(await activeLeetCodeTab());
   stuckButton.disabled = !enabledInput.checked || !(await activeLeetCodeTab());
   statusElement.textContent = enabledInput.checked ? "Automatic capture is on." : "Capture is paused.";
 });
@@ -45,6 +48,16 @@ captureButton.addEventListener("click", async () => {
   else window.setTimeout(() => void renderStatus(), 250);
 }
 );
+
+importCurrentButton.addEventListener("click", async () => {
+  const tab = await activeLeetCodeTab();
+  if (!tab?.id) return;
+  importCurrentButton.disabled = true;
+  statusElement.textContent = "Reading current submission result…";
+  const response = await chrome.tabs.sendMessage(tab.id, { type: "IMPORT_CURRENT_SUBMISSION" }).catch(() => ({ ok: false }));
+  if (!response?.ok) statusElement.textContent = "Could not import the current result. Make sure a completed submission result is visible, then reload LeetCode if needed.";
+  else window.setTimeout(() => void renderStatus(), 250);
+});
 
 importButton.addEventListener("click", async () => {
   const tab = await activeLeetCodeSiteTab();

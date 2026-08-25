@@ -26,6 +26,7 @@ export type PageEvent =
   | { source: "REVIEWLY_PAGE"; kind: "ACTION"; action: "RUN" | "SUBMIT"; snapshot: PageSnapshot }
   | { source: "REVIEWLY_PAGE"; kind: "VERDICT"; verdict: AttemptVerdict }
   | { source: "REVIEWLY_PAGE"; kind: "SNAPSHOT"; requestId: string; snapshot: PageSnapshot }
+  | { source: "REVIEWLY_PAGE"; kind: "CURRENT_SUBMISSION"; requestId: string; snapshot: PageSnapshot; verdict: AttemptVerdict }
   | { source: "REVIEWLY_PAGE"; kind: "PROBLEM_INFO"; requestId: string; problem: ProblemInfo }
   | { source: "REVIEWLY_PAGE"; kind: "PROBLEM_METADATA"; metadata: ProblemMetadataPayload }
   | { source: "REVIEWLY_PAGE"; kind: "HISTORY_PAGE"; submissions: HistoricalSubmissionPayload[]; fetched: number }

@@ -5,11 +5,13 @@ import type { ApiRequest, AttemptAction, AttemptVerdict, PageEvent, PageSnapshot
 const SESSION_GAP = 24 * 60 * 60 * 1000;
 const VERDICT_TIMEOUT = 60 * 1000;
 
-type ApiResponse<T> = { ok: boolean; status: number; data: T & { error?: string } };
-type PendingAttempt = { id: string; sessionId: string; slug: string; action: AttemptAction; timer: number };
+type ApiResponse<T> = { ok: boolean; status: number; data: T & { error?: string; queued?: boolean } };
+type PendingAttempt = { id?: string; eventId: string; sessionId: string; slug: string; code: string; action: AttemptAction; timer: number };
+type CurrentSubmission = { snapshot: PageSnapshot; verdict: AttemptVerdict };
 
 let currentSession: { id: string; slug: string; lastActivity: number } | null = null;
 let recentlyCompletedSession: { id: string; slug: string; completedAt: number } | null = null;
+let recentlyCapturedResult: { slug: string; code: string; verdict: AttemptVerdict; capturedAt: number } | null = null;
 let pending: PendingAttempt | null = null;
 let earlyVerdict: AttemptVerdict | null = null;
 let captureInFlight = false;
@@ -20,6 +22,7 @@ let historyImported = 0;
 let historyDuplicates = 0;
 const snapshotRequests = new Map<string, (snapshot: PageSnapshot) => void>();
 const problemInfoRequests = new Map<string, (problem: ProblemInfo) => void>();
+const currentSubmissionRequests = new Map<string, (submission: CurrentSubmission) => void>();
 
 function injectPageAdapter() {
   const script = document.createElement("script");
@@ -62,15 +65,18 @@ async function finalizePending(verdict: AttemptVerdict) {
   const target = pending;
   pending = null;
   clearTimeout(target.timer);
-  const response = await api<{ id: string }>({ type: "API_REQUEST", path: `/api/attempts/${target.id}/verdict`, method: "PATCH", body: { verdict } });
+  const response = await api<{ id?: string }>({ type: "API_REQUEST", path: target.id ? `/api/attempts/${target.id}/verdict` : `/api/attempts/event/${target.eventId}/verdict`, method: "PATCH", body: { verdict } });
   if (!response.ok) { await setStatus(response.data.error || "Verdict could not be saved", "error"); return; }
+  recentlyCapturedResult = { slug: target.slug, code: target.code, verdict, capturedAt: Date.now() };
   const completesSession = target.action === "SUBMIT" && verdict === "ACCEPTED";
   await setStatus(
-    completesSession
-      ? "Accepted submission saved; session completed."
-      : verdict === "ACCEPTED"
-        ? "Accepted Run saved; continue in the same session."
-        : `${verdict.replaceAll("_", " ")} saved.`,
+    response.data.queued
+      ? `${verdict.replaceAll("_", " ")} saved offline; it will sync when Reviewly starts.`
+      : completesSession
+        ? "Accepted submission saved; session completed."
+        : verdict === "ACCEPTED"
+          ? "Accepted Run saved; continue in the same session."
+          : `${verdict.replaceAll("_", " ")} saved.`,
     "success",
   );
   if (completesSession) {
@@ -82,12 +88,12 @@ async function finalizePending(verdict: AttemptVerdict) {
   }
 }
 
-async function capture(snapshot: PageSnapshot, action: AttemptAction) {
+async function capture(snapshot: PageSnapshot, action: AttemptAction, knownVerdict?: AttemptVerdict) {
   if (!(await enabled())) return;
   if (pending) await finalizePending("UNKNOWN");
   const sessionId = sessionFor(snapshot.problemSlug);
   const eventId = crypto.randomUUID();
-  const response = await api<{ id: string; sequenceNumber: number }>({
+  const response = await api<{ id?: string; sequenceNumber?: number }>({
     type: "API_REQUEST",
     path: "/api/attempts",
     method: "POST",
@@ -104,14 +110,14 @@ async function capture(snapshot: PageSnapshot, action: AttemptAction) {
   if (!response.ok) { await setStatus(response.data.error || "Snapshot could not be saved", "error"); return; }
 
   if (action === "MANUAL") {
-    await setStatus(`Manual snapshot v${response.data.sequenceNumber} saved.`, "success");
+    await setStatus(response.data.queued ? "Manual snapshot saved offline; it will sync when Reviewly starts." : `Manual snapshot v${response.data.sequenceNumber} saved.`, "success");
     return;
   }
   const timer = window.setTimeout(() => void finalizePending("UNKNOWN"), VERDICT_TIMEOUT);
-  pending = { id: response.data.id, sessionId, slug: snapshot.problemSlug, action, timer };
-  await setStatus(`Attempt v${response.data.sequenceNumber} saved; waiting for verdict…`, "info");
-  if (earlyVerdict) {
-    const verdict = earlyVerdict;
+  pending = { id: response.data.id, eventId, sessionId, slug: snapshot.problemSlug, code: snapshot.code, action, timer };
+  await setStatus(response.data.queued ? "Attempt saved offline; it will sync when Reviewly starts." : `Attempt v${response.data.sequenceNumber} saved; waiting for verdict…`, "info");
+  if (knownVerdict || earlyVerdict) {
+    const verdict = knownVerdict ?? earlyVerdict!;
     earlyVerdict = null;
     await finalizePending(verdict);
   }
@@ -120,10 +126,10 @@ async function capture(snapshot: PageSnapshot, action: AttemptAction) {
 async function markStuck(problem: ProblemInfo, selfAssessment: SelfAssessment, note: string) {
   if (!(await enabled())) return;
   const sessionId = sessionFor(problem.problemSlug, true);
-  const response = await api<{ sequenceNumber: number }>({ type: "API_REQUEST", path: "/api/attempts", method: "POST", body: { eventId: crypto.randomUUID(), sessionId, problem: { slug: problem.problemSlug, title: problem.problemTitle, statement: problem.problemStatement }, action: "MANUAL", language: "not-applicable", code: "", timestamp: new Date().toISOString(), selfAssessment, note: note.trim() || undefined } });
+  const response = await api<{ sequenceNumber?: number }>({ type: "API_REQUEST", path: "/api/attempts", method: "POST", body: { eventId: crypto.randomUUID(), sessionId, problem: { slug: problem.problemSlug, title: problem.problemTitle, statement: problem.problemStatement }, action: "MANUAL", language: "not-applicable", code: "", timestamp: new Date().toISOString(), selfAssessment, note: note.trim() || undefined } });
   if (!response.ok) throw new Error(response.data.error || "Could not save the initial blocker");
   const label = selfAssessment === "NO_INITIAL_IDEA" ? "No initial idea" : selfAssessment === "ALGORITHM_SELECTION" ? "Algorithm selection" : selfAssessment === "IMPLEMENTATION_STUCK" ? "Implementation stuck" : "Used solution / viewed explanation";
-  await setStatus(`${label} saved as marker v${response.data.sequenceNumber}.`, "success");
+  await setStatus(response.data.queued ? `${label} marker saved offline; it will sync when Reviewly starts.` : `${label} saved as marker v${response.data.sequenceNumber}.`, "success");
 }
 
 function requestSnapshot(): Promise<PageSnapshot> {
@@ -142,6 +148,25 @@ function requestProblemInfo(): Promise<ProblemInfo> {
     window.postMessage({ source: "REVIEWLY_CONTENT", kind: "REQUEST_PROBLEM_INFO", requestId }, location.origin);
     window.setTimeout(() => { if (problemInfoRequests.delete(requestId)) reject(new Error("Problem page did not respond")); }, 4_000);
   });
+}
+
+function requestCurrentSubmission(): Promise<CurrentSubmission> {
+  const requestId = crypto.randomUUID();
+  return new Promise((resolve, reject) => {
+    currentSubmissionRequests.set(requestId, resolve);
+    window.postMessage({ source: "REVIEWLY_CONTENT", kind: "REQUEST_CURRENT_SUBMISSION", requestId }, location.origin);
+    window.setTimeout(() => { if (currentSubmissionRequests.delete(requestId)) reject(new Error("No completed result is visible yet")); }, 4_000);
+  });
+}
+
+async function importCurrentSubmission() {
+  const { snapshot, verdict } = await requestCurrentSubmission();
+  const duplicate = recentlyCapturedResult;
+  if (duplicate && duplicate.slug === snapshot.problemSlug && duplicate.code === snapshot.code && duplicate.verdict === verdict && Date.now() - duplicate.capturedAt < 5 * 60 * 1000) {
+    await setStatus("This visible submission result was already captured.", "info");
+    return;
+  }
+  await capture(snapshot, "SUBMIT", verdict);
 }
 
 window.addEventListener("message", (event: MessageEvent<PageEvent>) => {
@@ -164,6 +189,9 @@ window.addEventListener("message", (event: MessageEvent<PageEvent>) => {
   } else if (event.data.kind === "SNAPSHOT") {
     snapshotRequests.get(event.data.requestId)?.(event.data.snapshot);
     snapshotRequests.delete(event.data.requestId);
+  } else if (event.data.kind === "CURRENT_SUBMISSION") {
+    currentSubmissionRequests.get(event.data.requestId)?.({ snapshot: event.data.snapshot, verdict: event.data.verdict });
+    currentSubmissionRequests.delete(event.data.requestId);
   } else if (event.data.kind === "PROBLEM_INFO") {
     problemInfoRequests.get(event.data.requestId)?.(event.data.problem);
     problemInfoRequests.delete(event.data.requestId);
@@ -205,6 +233,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       .then((problem) => markStuck(problem, message.selfAssessment as SelfAssessment, typeof message.note === "string" ? message.note : ""))
       .then(() => sendResponse({ ok: true }))
       .catch((error) => { void setStatus(error instanceof Error ? error.message : "Could not save initial blocker", "error"); sendResponse({ ok: false }); });
+    return true;
+  }
+  if (message?.type === "IMPORT_CURRENT_SUBMISSION") {
+    void importCurrentSubmission()
+      .then(() => sendResponse({ ok: true }))
+      .catch((error) => { void setStatus(error instanceof Error ? error.message : "Could not import the current submission", "error"); sendResponse({ ok: false }); });
     return true;
   }
   if (message?.type !== "CAPTURE_MANUAL") return;

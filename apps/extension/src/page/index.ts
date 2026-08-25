@@ -25,6 +25,18 @@ window.addEventListener("message", (event) => {
     if (!snapshot.problemSlug || !snapshot.code) emit({ source: "REVIEWLY_PAGE", kind: "ERROR", message: "Editor code is not available yet." });
     else { emit({ source: "REVIEWLY_PAGE", kind: "SNAPSHOT", requestId: event.data.requestId, snapshot }); void leetcodeAdapter.fetchProblemMetadata(snapshot.problemSlug).then((metadata) => { if (metadata) emit({ source: "REVIEWLY_PAGE", kind: "PROBLEM_METADATA", metadata }); }); }
   }
+  if (event.data?.kind === "REQUEST_CURRENT_SUBMISSION") {
+    const snapshot = leetcodeAdapter.snapshot();
+    const verdict = leetcodeAdapter.visibleVerdict();
+    if (!snapshot.problemSlug || !snapshot.code) {
+      emit({ source: "REVIEWLY_PAGE", kind: "ERROR", message: "Editor code is not available yet." });
+    } else if (!verdict) {
+      emit({ source: "REVIEWLY_PAGE", kind: "ERROR", message: "No completed Run or Submit result is visible. Submit or run the code first, then open the extension again." });
+    } else {
+      emit({ source: "REVIEWLY_PAGE", kind: "CURRENT_SUBMISSION", requestId: event.data.requestId, snapshot, verdict });
+      void leetcodeAdapter.fetchProblemMetadata(snapshot.problemSlug).then((metadata) => { if (metadata) emit({ source: "REVIEWLY_PAGE", kind: "PROBLEM_METADATA", metadata }); });
+    }
+  }
   if (event.data?.kind === "REQUEST_PROBLEM_INFO") {
     const problem = leetcodeAdapter.problemInfo();
     if (!problem.problemSlug) emit({ source: "REVIEWLY_PAGE", kind: "ERROR", message: "Problem information is not available yet." });

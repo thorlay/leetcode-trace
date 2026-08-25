@@ -3,7 +3,7 @@
   "name": "Reviewly — LeetCode Capture",
   "version": "0.1.0",
   "description": "Capture LeetCode solution attempts for private, local learning analysis.",
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage", "tabs", "alarms"],
   "host_permissions": ["http://localhost:3000/*"],
   "background": { "service_worker": "dist/background.js" },
   "action": { "default_popup": "popup.html", "default_title": "Reviewly Capture" },

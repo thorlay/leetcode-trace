@@ -60,6 +60,13 @@ function sessionFor(slug: string, allowRecentlyCompleted = true) {
   return currentSession.id;
 }
 
+function adoptServerSessionId(requestedSessionId: string, savedSessionId: string | undefined) {
+  if (!savedSessionId || savedSessionId === requestedSessionId || currentSession?.id !== requestedSessionId) return requestedSessionId;
+  currentSession = { ...currentSession, id: savedSessionId };
+  void chrome.runtime.sendMessage({ type: "TRACK_SESSION", sessionId: savedSessionId });
+  return savedSessionId;
+}
+
 async function finalizePending(verdict: AttemptVerdict) {
   if (!pending) return;
   const target = pending;
@@ -93,7 +100,7 @@ async function capture(snapshot: PageSnapshot, action: AttemptAction, knownVerdi
   if (pending) await finalizePending("UNKNOWN");
   const sessionId = sessionFor(snapshot.problemSlug);
   const eventId = crypto.randomUUID();
-  const response = await api<{ id?: string; sequenceNumber?: number }>({
+  const response = await api<{ id?: string; sessionId?: string; sequenceNumber?: number }>({
     type: "API_REQUEST",
     path: "/api/attempts",
     method: "POST",
@@ -108,13 +115,14 @@ async function capture(snapshot: PageSnapshot, action: AttemptAction, knownVerdi
     },
   });
   if (!response.ok) { await setStatus(response.data.error || "Snapshot could not be saved", "error"); return; }
+  const savedSessionId = adoptServerSessionId(sessionId, response.data.sessionId);
 
   if (action === "MANUAL") {
     await setStatus(response.data.queued ? "Manual snapshot saved offline; it will sync when Reviewly starts." : `Manual snapshot v${response.data.sequenceNumber} saved.`, "success");
     return;
   }
   const timer = window.setTimeout(() => void finalizePending("UNKNOWN"), VERDICT_TIMEOUT);
-  pending = { id: response.data.id, eventId, sessionId, slug: snapshot.problemSlug, code: snapshot.code, action, timer };
+  pending = { id: response.data.id, eventId, sessionId: savedSessionId, slug: snapshot.problemSlug, code: snapshot.code, action, timer };
   await setStatus(response.data.queued ? "Attempt saved offline; it will sync when Reviewly starts." : `Attempt v${response.data.sequenceNumber} saved; waiting for verdict…`, "info");
   if (knownVerdict || earlyVerdict) {
     const verdict = knownVerdict ?? earlyVerdict!;
@@ -126,8 +134,9 @@ async function capture(snapshot: PageSnapshot, action: AttemptAction, knownVerdi
 async function markStuck(problem: ProblemInfo, selfAssessment: SelfAssessment, note: string) {
   if (!(await enabled())) return;
   const sessionId = sessionFor(problem.problemSlug, true);
-  const response = await api<{ sequenceNumber?: number }>({ type: "API_REQUEST", path: "/api/attempts", method: "POST", body: { eventId: crypto.randomUUID(), sessionId, problem: { slug: problem.problemSlug, title: problem.problemTitle, statement: problem.problemStatement }, action: "MANUAL", language: "not-applicable", code: "", timestamp: new Date().toISOString(), selfAssessment, note: note.trim() || undefined } });
+  const response = await api<{ sequenceNumber?: number; sessionId?: string }>({ type: "API_REQUEST", path: "/api/attempts", method: "POST", body: { eventId: crypto.randomUUID(), sessionId, problem: { slug: problem.problemSlug, title: problem.problemTitle, statement: problem.problemStatement }, action: "MANUAL", language: "not-applicable", code: "", timestamp: new Date().toISOString(), selfAssessment, note: note.trim() || undefined } });
   if (!response.ok) throw new Error(response.data.error || "Could not save the initial blocker");
+  adoptServerSessionId(sessionId, response.data.sessionId);
   const label = selfAssessment === "NO_INITIAL_IDEA" ? "No initial idea" : selfAssessment === "ALGORITHM_SELECTION" ? "Algorithm selection" : selfAssessment === "IMPLEMENTATION_STUCK" ? "Implementation stuck" : "Used solution / viewed explanation";
   await setStatus(response.data.queued ? `${label} marker saved offline; it will sync when Reviewly starts.` : `${label} saved as marker v${response.data.sequenceNumber}.`, "success");
 }

@@ -1,4 +1,4 @@
-export type HistoricalAttempt = { id: string; sessionId: string; problemId: string; createdAt: Date; verdict: string | null };
+export type HistoricalAttempt = { id: string; sessionId: string; problemId: string; createdAt: Date; verdict: string | null; action?: string };
 
 export function groupHistoricalAttempts(attempts: HistoricalAttempt[], gapMs = 24 * 60 * 60 * 1000) {
   const byProblem = new Map<string, HistoricalAttempt[]>();

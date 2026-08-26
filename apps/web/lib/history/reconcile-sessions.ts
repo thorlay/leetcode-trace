@@ -13,7 +13,7 @@ export async function reconcileProblemSessions(problemSlug: string) {
     include: { attempts: { orderBy: { createdAt: "asc" } } },
     orderBy: { startedAt: "asc" },
   });
-  const attempts = sessions.flatMap((session) => session.attempts.map((attempt) => ({ id: attempt.id, sessionId: attempt.sessionId, problemId: session.problemId, createdAt: attempt.createdAt, verdict: attempt.verdict })));
+  const attempts = sessions.flatMap((session) => session.attempts.map((attempt) => ({ id: attempt.id, sessionId: attempt.sessionId, problemId: session.problemId, createdAt: attempt.createdAt, verdict: attempt.verdict, action: attempt.action })));
   const groups = groupHistoricalAttempts(attempts);
   if (!groups.some((group) => new Set(group.map((attempt) => attempt.sessionId)).size > 1)) return { mergedGroups: 0, removedSessions: 0 };
 
@@ -29,10 +29,10 @@ export async function reconcileProblemSessions(problemSlug: string) {
       removedSessions += sourceIds.length - 1;
       const targetSessionId = group[0].sessionId;
       const sourceSessions = sessions.filter((session) => sourceIds.includes(session.id));
-      const accepted = group.some((attempt) => attempt.verdict === "ACCEPTED");
+      const accepted = group.some((attempt) => attempt.action === "SUBMIT" && attempt.verdict === "ACCEPTED");
       const lastAttempt = group.at(-1)!;
       const latestSource = sourceSessions.find((session) => session.id === lastAttempt.sessionId)!;
-      const allLive = sourceSessions.every((session) => session.captureCompleteness === "FULL");
+      const hasLiveCapture = sourceSessions.some((session) => session.captureCompleteness === "FULL");
       const initialAssessment = sourceSessions.map((session) => session.initialAssessment).find((value) => value !== null) ?? null;
 
       // Existing analysis and observations describe an older, incomplete trajectory.
@@ -49,7 +49,7 @@ export async function reconcileProblemSessions(problemSlug: string) {
           endedAt: accepted || latestSource.status === "ABANDONED" ? lastAttempt.createdAt : null,
           status: accepted ? "SOLVED" : latestSource.status === "ACTIVE" ? "ACTIVE" : "ABANDONED",
           analysisStatus: "PENDING",
-          captureCompleteness: allLive ? "FULL" : "SUBMISSIONS_ONLY",
+          captureCompleteness: hasLiveCapture ? "FULL" : "SUBMISSIONS_ONLY",
           trajectoryStatus: group.length >= 2 ? "AVAILABLE" : "NONE",
           initialAssessment,
           solutionConsulted: sourceSessions.some((session) => session.solutionConsulted),

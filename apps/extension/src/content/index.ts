@@ -1,4 +1,4 @@
-import type { ApiRequest, AttemptAction, AttemptVerdict, PageEvent, PageSnapshot, ProblemInfo, SelfAssessment } from "../lib/types";
+import type { ApiRequest, AttemptAction, AttemptVerdict, HistoricalSubmissionPayload, PageEvent, PageSnapshot, ProblemInfo, SelfAssessment } from "../lib/types";
 
 // A same-problem retry within one day belongs to one learning session, matching
 // the history import reconstruction rule.
@@ -7,7 +7,7 @@ const VERDICT_TIMEOUT = 60 * 1000;
 
 type ApiResponse<T> = { ok: boolean; status: number; data: T & { error?: string; queued?: boolean } };
 type PendingAttempt = { id?: string; eventId: string; sessionId: string; slug: string; code: string; action: AttemptAction; timer: number };
-type CurrentSubmission = { snapshot: PageSnapshot; verdict: AttemptVerdict };
+type CurrentSubmission = { snapshot: PageSnapshot; verdict: AttemptVerdict; submission?: HistoricalSubmissionPayload };
 
 let currentSession: { id: string; slug: string; lastActivity: number } | null = null;
 let recentlyCompletedSession: { id: string; slug: string; completedAt: number } | null = null;
@@ -187,7 +187,7 @@ function requestCurrentSubmission(): Promise<CurrentSubmission> {
 }
 
 async function importCurrentSubmission() {
-  const { snapshot, verdict } = await requestCurrentSubmission();
+  const { snapshot, verdict, submission } = await requestCurrentSubmission();
   const duplicate = recentlyCapturedResult;
   if (duplicate && duplicate.slug === snapshot.problemSlug && duplicate.code === snapshot.code && duplicate.verdict === verdict && Date.now() - duplicate.capturedAt < 5 * 60 * 1000) {
     await setStatus("This visible submission result was already captured.", "info");
@@ -206,7 +206,13 @@ async function importCurrentSubmission() {
     await setStatus(`${verdict.replaceAll("_", " ")} recovered for the pending submission.`, "success");
     return;
   }
-  await capture(snapshot, "SUBMIT", verdict);
+  if (!submission) {
+    await setStatus("Could not identify this LeetCode submission. Wait for the automatic result sync, or use Import LeetCode history.", "error");
+    return;
+  }
+  const imported = await api<{ imported: number; duplicates: number }>({ type: "API_REQUEST", path: "/api/import/leetcode/current", method: "POST", body: submission });
+  if (!imported.ok) throw new Error(imported.data.error || "Could not import the current LeetCode submission");
+  await setStatus(imported.data.duplicates ? "This LeetCode submission was already imported." : "Current LeetCode submission imported.", "success");
 }
 
 window.addEventListener("message", (event: MessageEvent<PageEvent>) => {
@@ -230,7 +236,7 @@ window.addEventListener("message", (event: MessageEvent<PageEvent>) => {
     snapshotRequests.get(event.data.requestId)?.(event.data.snapshot);
     snapshotRequests.delete(event.data.requestId);
   } else if (event.data.kind === "CURRENT_SUBMISSION") {
-    currentSubmissionRequests.get(event.data.requestId)?.resolve({ snapshot: event.data.snapshot, verdict: event.data.verdict });
+    currentSubmissionRequests.get(event.data.requestId)?.resolve({ snapshot: event.data.snapshot, verdict: event.data.verdict, submission: event.data.submission });
     currentSubmissionRequests.delete(event.data.requestId);
   } else if (event.data.kind === "PROBLEM_INFO") {
     problemInfoRequests.get(event.data.requestId)?.(event.data.problem);

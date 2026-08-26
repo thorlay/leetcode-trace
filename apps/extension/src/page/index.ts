@@ -30,18 +30,19 @@ window.addEventListener("message", (event) => {
     const verdict = leetcodeAdapter.visibleVerdict();
     if (!snapshot.problemSlug) {
       emit({ source: "REVIEWLY_PAGE", kind: "ERROR", requestId: event.data.requestId, message: "Problem information is not available yet." });
-    } else if (verdict && snapshot.code) {
-      emit({ source: "REVIEWLY_PAGE", kind: "CURRENT_SUBMISSION", requestId: event.data.requestId, snapshot, verdict });
-      void leetcodeAdapter.fetchProblemMetadata(snapshot.problemSlug).then((metadata) => { if (metadata) emit({ source: "REVIEWLY_PAGE", kind: "PROBLEM_METADATA", metadata }); });
     } else {
       void leetcodeAdapter.fetchLatestSubmissionForProblem(snapshot.problemSlug)
         .then((submission) => {
-          if (!submission || !submission.code) {
-            emit({ source: "REVIEWLY_PAGE", kind: "ERROR", requestId: event.data.requestId, message: "Could not read a recent submission for this problem. Select a completed result or use Import LeetCode history." });
+          if (submission?.code) {
+            emit({ source: "REVIEWLY_PAGE", kind: "CURRENT_SUBMISSION", requestId: event.data.requestId, snapshot: { ...snapshot, problemTitle: submission.problemTitle || snapshot.problemTitle, code: submission.code, language: submission.language }, verdict: submission.verdict, submission });
+            void leetcodeAdapter.fetchProblemMetadata(snapshot.problemSlug).then((metadata) => { if (metadata) emit({ source: "REVIEWLY_PAGE", kind: "PROBLEM_METADATA", metadata }); });
             return;
           }
-          emit({ source: "REVIEWLY_PAGE", kind: "CURRENT_SUBMISSION", requestId: event.data.requestId, snapshot: { ...snapshot, problemTitle: submission.problemTitle || snapshot.problemTitle, code: submission.code, language: submission.language }, verdict: submission.verdict });
-          void leetcodeAdapter.fetchProblemMetadata(snapshot.problemSlug).then((metadata) => { if (metadata) emit({ source: "REVIEWLY_PAGE", kind: "PROBLEM_METADATA", metadata }); });
+          if (verdict && snapshot.code) {
+            emit({ source: "REVIEWLY_PAGE", kind: "CURRENT_SUBMISSION", requestId: event.data.requestId, snapshot, verdict });
+            return;
+          }
+          emit({ source: "REVIEWLY_PAGE", kind: "ERROR", requestId: event.data.requestId, message: "Could not read a recent submission for this problem. Select a completed result or use Import LeetCode history." });
         })
         .catch((error) => emit({ source: "REVIEWLY_PAGE", kind: "ERROR", requestId: event.data.requestId, message: error instanceof Error ? error.message : "Could not read the latest submission." }));
     }

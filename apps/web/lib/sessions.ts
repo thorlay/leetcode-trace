@@ -74,7 +74,7 @@ export async function getProblems(): Promise<ProblemView[]> {
   try {
     const problems = await prisma.problem.findMany({
       take: 500,
-      include: { tags: { orderBy: { label: "asc" }, select: { slug: true, label: true } }, patterns: { orderBy: { confidence: "desc" }, select: { patternKey: true, label: true, confidence: true } }, sessions: { orderBy: { startedAt: "desc" }, select: { id: true, startedAt: true, status: true, _count: { select: { attempts: true } } } } },
+      include: { tags: { orderBy: { label: "asc" }, select: { slug: true, label: true } }, patterns: { orderBy: { confidence: "desc" }, select: { patternKey: true, label: true, confidence: true } }, sessions: { orderBy: { startedAt: "desc" }, select: { id: true, startedAt: true, status: true, _count: { select: { attempts: { where: { action: "SUBMIT" } } } } } } },
     });
     return problems.map((problem) => {
       const latest = problem.sessions[0];

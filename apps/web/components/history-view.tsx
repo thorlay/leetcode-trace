@@ -48,7 +48,7 @@ export function HistoryView({ sessions, locale }: { sessions: SessionView[]; loc
   const copy = label[locale]; const zh = locale === "zh";
   const problemCount = new Set(sessions.map((session) => session.problem.slug)).size;
   const submissionCount = sessions.reduce((sum, session) => sum + session.attempts.filter((attempt) => attempt.action === "SUBMIT").length, 0);
-  const analyzableCount = sessions.filter((session) => session.trajectoryStatus !== "NONE").length;
+  const analyzableCount = sessions.filter((session) => session.trajectoryStatus === "AVAILABLE" && !session.analysis).length;
   return <main className="shell history-page">
     <header className="history-hero"><div><p className="eyebrow">{copy.eyebrow}</p><h1>{copy.title}</h1><p className="lede">{copy.lede}</p></div><Link className="ghost-button data-link" href={zh ? "/zh/data" : "/data"}>{copy.data} →</Link></header>
     <section className="history-stats">

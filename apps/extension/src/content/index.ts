@@ -175,6 +175,19 @@ async function importCurrentSubmission() {
     await setStatus("This visible submission result was already captured.", "info");
     return;
   }
+  const recovered = await api<{ recovered: boolean; sessionId?: string }>({ type: "API_REQUEST", path: "/api/attempts/reconcile-current", method: "POST", body: { problemSlug: snapshot.problemSlug, code: snapshot.code, verdict } });
+  if (recovered.ok && recovered.data.recovered) {
+    recentlyCapturedResult = { slug: snapshot.problemSlug, code: snapshot.code, verdict, capturedAt: Date.now() };
+    adoptServerSessionId(currentSession?.id ?? recovered.data.sessionId ?? "", recovered.data.sessionId);
+    const completesSession = verdict === "ACCEPTED";
+    if (completesSession && recovered.data.sessionId) {
+      recentlyCompletedSession = { id: recovered.data.sessionId, slug: snapshot.problemSlug, completedAt: Date.now() };
+      currentSession = null;
+      void chrome.runtime.sendMessage({ type: "UNTRACK_SESSION" });
+    }
+    await setStatus(`${verdict.replaceAll("_", " ")} recovered for the pending submission.`, "success");
+    return;
+  }
   await capture(snapshot, "SUBMIT", verdict);
 }
 

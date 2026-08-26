@@ -45,7 +45,8 @@ export async function reconcileProblemSessions(problemSlug: string) {
       const accepted = group.some((attempt) => attempt.action === "SUBMIT" && attempt.verdict === "ACCEPTED");
       const lastAttempt = group.at(-1)!;
       const latestSource = sourceSessions.find((session) => session.id === lastAttempt.sessionId)!;
-      const hasLiveCapture = sourceSessions.some((session) => session.captureCompleteness === "FULL");
+      const allLiveCaptured = sourceSessions.every((session) => session.captureCompleteness === "FULL");
+      const hasSomeLiveCapture = sourceSessions.some((session) => session.captureCompleteness === "FULL" || session.captureCompleteness === "PARTIAL_LIVE");
       const initialAssessment = sourceSessions.map((session) => session.initialAssessment).find((value) => value !== null) ?? null;
 
       for (let index = 0; index < group.length; index += 1) await tx.attempt.update({ where: { id: group[index].id }, data: { sequenceNumber: -(index + 1) } });
@@ -58,7 +59,7 @@ export async function reconcileProblemSessions(problemSlug: string) {
           endedAt: accepted || latestSource.status === "ABANDONED" ? lastAttempt.createdAt : null,
           status: accepted ? "SOLVED" : latestSource.status === "ACTIVE" ? "ACTIVE" : "ABANDONED",
           analysisStatus: "PENDING",
-          captureCompleteness: hasLiveCapture ? "FULL" : "SUBMISSIONS_ONLY",
+          captureCompleteness: allLiveCaptured ? "FULL" : hasSomeLiveCapture ? "PARTIAL_LIVE" : "SUBMISSIONS_ONLY",
           trajectoryStatus: group.length >= 2 ? "AVAILABLE" : "NONE",
           initialAssessment,
           solutionConsulted: sourceSessions.some((session) => session.solutionConsulted),

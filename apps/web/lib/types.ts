@@ -60,7 +60,7 @@ export type SessionView = {
   id: string;
   status: string;
   analysisStatus: string;
-  captureCompleteness: "FINAL_ONLY" | "SUBMISSIONS_ONLY" | "FULL";
+  captureCompleteness: "FINAL_ONLY" | "SUBMISSIONS_ONLY" | "PARTIAL_LIVE" | "FULL";
   trajectoryStatus: "NONE" | "AVAILABLE" | "ANALYZED";
   initialAssessment?: "NO_INITIAL_IDEA" | "ALGORITHM_SELECTION" | "IMPLEMENTATION_STUCK" | null;
   solutionConsulted?: boolean;

@@ -29,7 +29,7 @@ export async function importHistoricalSubmissions(submissions: HistoricalSubmiss
 }
 
 export async function finalizeHistoricalImport() {
-  const sessions = await prisma.problemSession.findMany({ where: { captureCompleteness: { not: "FULL" }, trajectoryStatus: { not: "ANALYZED" } }, include: { attempts: true } });
+  const sessions = await prisma.problemSession.findMany({ where: { captureCompleteness: { in: ["FINAL_ONLY", "SUBMISSIONS_ONLY"] }, trajectoryStatus: { not: "ANALYZED" } }, include: { attempts: true } });
   const attempts = sessions.flatMap((session) => session.attempts.map((attempt) => ({ id: attempt.id, sessionId: attempt.sessionId, problemId: session.problemId, createdAt: attempt.createdAt, verdict: attempt.verdict, action: attempt.action })));
   const groups = groupHistoricalAttempts(attempts);
   await prisma.$transaction(async (tx) => {

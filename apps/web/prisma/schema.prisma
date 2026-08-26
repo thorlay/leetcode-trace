@@ -72,6 +72,7 @@ enum ReviewRating {
 enum CaptureCompleteness {
   FINAL_ONLY
   SUBMISSIONS_ONLY
+  PARTIAL_LIVE
   FULL
 }
 

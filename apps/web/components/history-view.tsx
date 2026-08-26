@@ -21,7 +21,7 @@ const label = {
 } as const;
 
 function completenessText(value: SessionView["captureCompleteness"], zh: boolean) {
-  const labels = zh ? { FINAL_ONLY: "仅最终提交", SUBMISSIONS_ONLY: "仅提交快照", FULL: "完整实时记录" } : { FINAL_ONLY: "Final only", SUBMISSIONS_ONLY: "Submissions only", FULL: "Full live capture" };
+  const labels = zh ? { FINAL_ONLY: "仅最终提交", SUBMISSIONS_ONLY: "仅提交快照", PARTIAL_LIVE: "部分实时记录", FULL: "完整实时记录" } : { FINAL_ONLY: "Final only", SUBMISSIONS_ONLY: "Submissions only", PARTIAL_LIVE: "Partial live capture", FULL: "Full live capture" };
   return labels[value];
 }
 

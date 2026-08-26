@@ -1,0 +1,1 @@
+ALTER TYPE "CaptureCompleteness" ADD VALUE IF NOT EXISTS 'PARTIAL_LIVE';

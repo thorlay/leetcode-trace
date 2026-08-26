@@ -14,7 +14,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       // A successful Run proves the current code passes the example/full test run, but it
       // is not a LeetCode submission and must not close the learning session.
       if (parsed.data.verdict === "ACCEPTED" && updated.action === "SUBMIT") {
-        await tx.problemSession.update({ where: { id: updated.sessionId }, data: { status: "SOLVED", endedAt: new Date(), analysisStatus: "PENDING" } });
+        await tx.problemSession.update({ where: { id: updated.sessionId }, data: { status: "SOLVED", endedAt: updated.createdAt, analysisStatus: "PENDING" } });
       }
       return updated;
     });

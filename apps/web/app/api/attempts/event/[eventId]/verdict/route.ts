@@ -17,7 +17,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ev
       if (!existing) throw new Error("Attempt not found");
       const updated = await tx.attempt.update({ where: { id: existing.id }, data: { verdict: parsed.data.verdict } });
       if (parsed.data.verdict === "ACCEPTED" && updated.action === "SUBMIT") {
-        await tx.problemSession.update({ where: { id: updated.sessionId }, data: { status: "SOLVED", endedAt: new Date(), analysisStatus: "PENDING" } });
+        await tx.problemSession.update({ where: { id: updated.sessionId }, data: { status: "SOLVED", endedAt: updated.createdAt, analysisStatus: "PENDING" } });
       }
       return updated;
     });

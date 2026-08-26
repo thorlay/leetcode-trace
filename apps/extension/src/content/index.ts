@@ -95,6 +95,24 @@ async function finalizePending(verdict: AttemptVerdict) {
   }
 }
 
+async function resolvePendingAfterTimeout() {
+  const target = pending;
+  if (!target) return;
+  if (target.action === "SUBMIT") {
+    try {
+      const { snapshot, verdict } = await requestCurrentSubmission();
+      if (snapshot.problemSlug === target.slug && snapshot.code === target.code) {
+        await finalizePending(verdict);
+        return;
+      }
+    } catch {
+      // LeetCode may still be judging or may not expose the history endpoint. Fall back
+      // to an explicit UNKNOWN rather than inventing a verdict.
+    }
+  }
+  await finalizePending("UNKNOWN");
+}
+
 async function capture(snapshot: PageSnapshot, action: AttemptAction, knownVerdict?: AttemptVerdict) {
   if (!(await enabled())) return;
   if (pending) await finalizePending("UNKNOWN");
@@ -121,7 +139,7 @@ async function capture(snapshot: PageSnapshot, action: AttemptAction, knownVerdi
     await setStatus(response.data.queued ? "Manual snapshot saved offline; it will sync when Reviewly starts." : `Manual snapshot v${response.data.sequenceNumber} saved.`, "success");
     return;
   }
-  const timer = window.setTimeout(() => void finalizePending("UNKNOWN"), VERDICT_TIMEOUT);
+  const timer = window.setTimeout(() => void resolvePendingAfterTimeout(), VERDICT_TIMEOUT);
   pending = { id: response.data.id, eventId, sessionId: savedSessionId, slug: snapshot.problemSlug, code: snapshot.code, action, timer };
   await setStatus(response.data.queued ? "Attempt saved offline; it will sync when Reviewly starts." : `Attempt v${response.data.sequenceNumber} saved; waiting for verdict…`, "info");
   if (knownVerdict || earlyVerdict) {

@@ -31,7 +31,7 @@ export function computeTrajectoryMetrics(startedAt: string, attempts: AttemptVie
   const start = new Date(startedAt).getTime();
   const secondsFromStart = (timestamp: string) => Math.max(0, Math.round((new Date(timestamp).getTime() - start) / 1000));
   const firstSubmit = attempts.find((attempt) => attempt.action === "SUBMIT");
-  const accepted = attempts.find((attempt) => attempt.verdict === "ACCEPTED");
+  const accepted = attempts.find((attempt) => attempt.action === "SUBMIT" && attempt.verdict === "ACCEPTED");
 
   return {
     attemptCount: attempts.length,

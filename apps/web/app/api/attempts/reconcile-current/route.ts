@@ -18,8 +18,8 @@ export async function POST(request: Request) {
   const since = new Date(Date.now() - 30 * 60 * 1_000);
 
   const pending = await prisma.attempt.findFirst({
-    where: { action: "SUBMIT", verdict: null, codeHash, createdAt: { gte: since }, session: { problem: { slug: problemSlug } } },
-    orderBy: { createdAt: "desc" },
+    where: { action: "SUBMIT", OR: [{ verdict: null }, { verdict: "UNKNOWN" }], codeHash, createdAt: { gte: since }, session: { problem: { slug: problemSlug } } },
+    orderBy: { createdAt: "asc" },
     select: { id: true, sessionId: true },
   });
   if (!pending) return NextResponse.json({ recovered: false });
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const attempt = await prisma.$transaction(async (tx) => {
     const updated = await tx.attempt.update({ where: { id: pending.id }, data: { verdict } });
     if (verdict === "ACCEPTED") {
-      await tx.problemSession.update({ where: { id: updated.sessionId }, data: { status: "SOLVED", endedAt: new Date(), analysisStatus: "PENDING" } });
+      await tx.problemSession.update({ where: { id: updated.sessionId }, data: { status: "SOLVED", endedAt: updated.createdAt, analysisStatus: "PENDING" } });
     }
     return updated;
   });
